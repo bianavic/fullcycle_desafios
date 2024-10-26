@@ -24,4 +24,8 @@ Salvar em arquivo:
 Endpoint:
 - endpoint gerado pelo server.go: /cotacao
 - porta utilizada pelo servidor HTTP: 8080.
+
+
+### Tools
+- https://transform.tools/json-to-go
  
