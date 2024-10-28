@@ -2,11 +2,16 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"net/http"
 )
 
-type Cotacao struct {
+const (
+	apiURL     = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
+	serverPort = ":8080"
+)
+
+type CurrencyRate struct {
 	Code       string `json:"code"`
 	Codein     string `json:"codein"`
 	Name       string `json:"name"`
@@ -20,53 +25,46 @@ type Cotacao struct {
 	CreateDate string `json:"create_date"`
 }
 
-type Cotacoes struct {
-	USDBRL Cotacao `json:"usdbrl"`
+type CurrencyRates struct {
+	USDBRL CurrencyRate `json:"usdbrl"`
 }
 
 func main() {
-
-	http.HandleFunc("/", BuscaCotacaoHandler)
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/cotacao", ExchangeRateHandler)
+	fmt.Printf("Server running on http://localhost%s/cotacao\n", serverPort)
+	if err := http.ListenAndServe(serverPort, nil); err != nil {
+		fmt.Printf("Failed to start server: %v\n", err)
+	}
 }
 
-func BuscaCotacaoHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
+func ExchangeRateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	moedaParam := r.URL.Query().Get("moedas")
-	if moedaParam == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	moeda, err := BuscaCotacao(moedaParam)
+	moedas, err := FetchExchangeRate()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch exchange rate", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(moeda)
+	json.NewEncoder(w).Encode(map[string]string{"bid": moedas})
 }
 
-func BuscaCotacao(moedas string) (*Cotacoes, error) {
-	resp, err := http.Get("https://economia.awesomeapi.com.br/json/last/" + moedas)
+func FetchExchangeRate() (string, error) {
+	resp, err := http.Get(apiURL)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("failed to fetch exchange rate: %w", err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+
+	var c CurrencyRates
+	if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	var c Cotacoes
-	err = json.Unmarshal(body, &c)
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
+	return c.USDBRL.Bid, nil
 }

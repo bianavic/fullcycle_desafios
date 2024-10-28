@@ -28,4 +28,9 @@ Endpoint:
 
 ### Tools
 - https://transform.tools/json-to-go
+
+### Curl
+```
+curl localhost:8080/cotacao
+```
  
