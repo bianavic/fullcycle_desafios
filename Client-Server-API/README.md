@@ -29,8 +29,29 @@ Endpoint:
 ### Tools
 - https://transform.tools/json-to-go
 
-### Curl
+## How To
+
 ```
-curl localhost:8080/cotacao
+ go run Client-Server-API/server/server.go
 ```
- 
+
+```
+go run Client-Server-API/client/client.go
+```
+
+#### Expected:
+
+```
+exchange rate saved to cotacao.txt
+```
+
+- Open the cotacao.txt file to verify the content
+
+### Expected timeout errors
+
+- client
+error: failed to fetch exchange rate: Get "http://localhost:8080/cotacao": context deadline exceeded
+
+- server
+error fetching exchange rate: failed to fetch exchange rate: Get "https://economia.awesomeapi.com.br/json/last/USD-BRL": context deadline exceeded
+

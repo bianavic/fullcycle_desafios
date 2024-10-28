@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 const (
 	apiURL     = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
 	serverPort = ":8080"
+	apiTimeout = 200 * time.Millisecond
 )
 
 type CurrencyRate struct {
@@ -30,22 +33,23 @@ type CurrencyRates struct {
 }
 
 func main() {
-	http.HandleFunc("/cotacao", ExchangeRateHandler)
-	fmt.Printf("Server running on http://localhost%s/cotacao\n", serverPort)
+	http.HandleFunc("/cotacao", exchangeRateHandler)
+	fmt.Printf("server running on http://localhost%s/cotacao\n", serverPort)
 	if err := http.ListenAndServe(serverPort, nil); err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
+		fmt.Printf("failed to start server: %v\n", err)
 	}
 }
 
-func ExchangeRateHandler(w http.ResponseWriter, r *http.Request) {
+func exchangeRateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	moedas, err := FetchExchangeRate()
+	moedas, err := fetchExchangeRate()
 	if err != nil {
-		http.Error(w, "Failed to fetch exchange rate", http.StatusInternalServerError)
+		http.Error(w, "failed to fetch exchange rate", http.StatusInternalServerError)
+		fmt.Printf("error fetching exchange rate: %v\n", err)
 		return
 	}
 
@@ -54,8 +58,17 @@ func ExchangeRateHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"bid": moedas})
 }
 
-func FetchExchangeRate() (string, error) {
-	resp, err := http.Get(apiURL)
+func fetchExchangeRate() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch exchange rate: %w", err)
 	}
