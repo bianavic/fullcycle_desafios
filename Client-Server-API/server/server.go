@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 
 const (
 	apiURL     = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
-	serverPort = ":8080"
 	apiTimeout = 200 * time.Millisecond
 )
 
@@ -32,15 +31,7 @@ type CurrencyRates struct {
 	USDBRL CurrencyRate `json:"usdbrl"`
 }
 
-func main() {
-	http.HandleFunc("/cotacao", exchangeRateHandler)
-	fmt.Printf("server running on http://localhost%s/cotacao\n", serverPort)
-	if err := http.ListenAndServe(serverPort, nil); err != nil {
-		fmt.Printf("failed to start server: %v\n", err)
-	}
-}
-
-func exchangeRateHandler(w http.ResponseWriter, r *http.Request) {
+func ExchangeRateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
