@@ -33,11 +33,12 @@ OBS: os 3 contextos deverão retornar erro nos logs caso o tempo de execução s
 ## How To
 
 ```
- go run Client-Server-API/server/server.go
+go build main.go
 ```
 
 ```
-go run Client-Server-API/client/client.go
+// go run Client-Server-API/server/server.go
+// go run Client-Server-API/client/client.go
 ```
 
 #### Expected:
