@@ -1,0 +1,10 @@
+services:
+  cotacao:
+    build: .
+    container_name: sqlite3
+    restart: on-failure
+    volumes:
+      - ./data/db:/root/db
+    ports:
+      - 5050:5050
+
