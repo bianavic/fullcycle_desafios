@@ -17,11 +17,11 @@ type BidResponse struct {
 	Bid string `json:"bid"`
 }
 
+// GetExchangeRate fetches the exchange rate from the local server
 func GetExchangeRate(ctx context.Context) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL, nil)
 	if err != nil {
-		fmt.Printf("error fetching exchange rate: %v\n", err)
-		return "", nil
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	client := &http.Client{}
