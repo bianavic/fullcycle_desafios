@@ -7,13 +7,15 @@ import (
 	"github.com/bianavic/fullcycle_desafios.git/client"
 	"github.com/bianavic/fullcycle_desafios.git/server"
 	_ "github.com/mattn/go-sqlite3"
+	"log"
 	"net/http"
 	"time"
 )
 
 const (
+	dbTimeout               = 10 * time.Millisecond // Timeout for the database operation (10ms)
+	dbFile                  = "exchange_rates.db"   // SQLite database file
 	serverPort              = ":8080"
-	timeout                 = 300 * time.Millisecond
 	createExchangeRateTable = `CREATE TABLE IF NOT EXISTS exchange_rates (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		bid TEXT,
@@ -23,29 +25,32 @@ const (
 
 func main() {
 
-	// Start the server
-	startServer()
+	// Initialize the database
+	InitDB()
 
-	// Allow the server some time to start before the client makes a request
+	// start the server
+	go startServer()
+
+	// allow the server some time to start before the client makes a request
 	time.Sleep(10 * time.Second)
 
-	// Get the exchange rate from the local server
-	ctx, cancel := context.WithTimeout(context.Background(), 3*timeout)
+	// get the exchange rate from the local server
+	ctx, cancel := context.WithTimeout(context.Background(), 3*dbTimeout)
 	defer cancel()
+
 	rate, err := client.GetExchangeRate(ctx)
 	if err != nil {
-		fmt.Printf("Error getting exchange rate: %v\n", err)
+		fmt.Printf("error getting exchange rate: %v\n", err)
 		return
 	}
 
-	// Save the rate to a file
+	// save the rate to a file
 	if err := client.SaveToFile(rate); err != nil {
-		fmt.Printf("Error saving to file: %v\n", err)
+		fmt.Printf("error saving to file: %v\n", err)
 		return
 	}
 
-	fmt.Println("Exchange rate saved to cotacao.txt")
-
+	fmt.Println("exchange rate saved to cotacao.txt")
 }
 
 // startServer starts an HTTP server that serves exchange rates
@@ -58,17 +63,15 @@ func startServer() {
 }
 
 func InitDB() {
-	// Initialize the SQLite database and create the table
-	db, err := sql.Open("sqlite3", "root:root@tcp(localhost:3306)/goexpert_challenge1")
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to open SQLite database: %v", err)
 	}
 	defer db.Close()
 
 	// Create the exchange_rates table if it doesn't exist
 	_, err = db.Exec(createExchangeRateTable)
 	if err != nil {
-		fmt.Printf("Error creating table in SQLite: %v\n", err)
-		return
+		log.Fatalf("Error creating table in SQLite: %v", err)
 	}
 }
