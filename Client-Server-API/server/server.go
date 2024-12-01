@@ -17,7 +17,6 @@ const (
 	dbFile     = "exchange_rates.db"
 )
 
-var db *sql.DB
 var mu sync.Mutex // handle concurrent database access
 
 // CurrencyRates structure for API response
@@ -50,17 +49,17 @@ func ExchangeRateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"bid": rate})
+	json.NewEncoder(w).Encode(map[string]any{"bid": rate.USDBRL.Bid})
 }
 
 // fetchExchangeRate fetches the exchange rate from the API
-func fetchExchangeRate() (string, error) {
+func fetchExchangeRate() (*CurrencyRates, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	client := &http.Client{
@@ -68,21 +67,23 @@ func fetchExchangeRate() (string, error) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch exchange rate: %w", err)
+		return nil, fmt.Errorf("failed to fetch exchange rate: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var rates CurrencyRates
 	if err := json.NewDecoder(resp.Body).Decode(&rates); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return rates.USDBRL.Bid, nil
+	return &rates, nil
 }
 
-func storeExchangeRate(rate string) error {
+func storeExchangeRate(rate *CurrencyRates) error {
 	mu.Lock()
 	defer mu.Unlock()
+
+	query := `INSERT INTO exchange_rates (bid) VALUES (?);`
 
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
@@ -90,7 +91,7 @@ func storeExchangeRate(rate string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO exchange_rates (bid) VALUES (?)", rate)
+	_, err = db.ExecContext(context.Background(), query, rate.USDBRL.Bid)
 	if err != nil {
 		return fmt.Errorf("failed to insert exchange rate: %w", err)
 	}
