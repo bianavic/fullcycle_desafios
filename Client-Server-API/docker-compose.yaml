@@ -1,10 +1,16 @@
 services:
-  cotacao:
-    build: .
-    container_name: sqlite3
+  sqlite:
+    container_name: app # container name
+    image: nouchka/sqlite3:latest  # valid image
     restart: on-failure
+    platform: linux/amd64
+    environment:
+      SQLITE_ROOT_PASSWORD: root
+      SQLITE_DATABASE: exchange_rates
+      SQLITE_PASSWORD: root
+      DB_FILE: /app/data/db/exchange_rates.db # SQLite path file
     volumes:
-      - ./data/db:/root/db
+      - ./data/db:/app/data/db # mounting volume for SQLite data
     ports:
       - 5050:5050
 
