@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	dbTimeout               = 10 * time.Millisecond // Timeout for the database operation (10ms)
-	dbFile                  = "exchange_rates.db"   // SQLite database file
+	dbTimeout               = 10 * time.Millisecond                                          // Timeout for the database operation (10ms)
+	dbPath                  = "file:/app/data/db/exchange_rates.db?cache=shared&mode=memory" // sqlite db file
 	serverPort              = ":8080"
 	createExchangeRateTable = `CREATE TABLE IF NOT EXISTS exchange_rates (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,7 @@ const (
 func main() {
 
 	// Initialize the database
-	InitDB()
+	InitDB(dbPath)
 
 	// start the server
 	go startServer()
@@ -62,15 +62,15 @@ func startServer() {
 	}
 }
 
-func InitDB() {
-	db, err := sql.Open("sqlite3", dbFile)
+func InitDB(dbPath string) {
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open SQLite database: %v", err)
 	}
 	defer db.Close()
 
 	// Create the exchange_rates table if it doesn't exist
-	_, err = db.Exec(createExchangeRateTable)
+	_, err = db.ExecContext(context.Background(), createExchangeRateTable)
 	if err != nil {
 		log.Fatalf("Error creating table in SQLite: %v", err)
 	}
