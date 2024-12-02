@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"github.com/bianavic/fullcycle_desafios.git/schemas"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"
@@ -13,6 +15,7 @@ const (
 func InitializeSQLite() (*gorm.DB, error) {
 	logger := GetLogger("sqlite")
 
+	// ensure file exists
 	_, err := os.Stat(dbSourceName)
 	if os.IsNotExist(err) {
 		logger.Info("databse file not found, creating...")
@@ -28,18 +31,20 @@ func InitializeSQLite() (*gorm.DB, error) {
 		file.Close()
 	}
 
-	// create db and connect
+	// open sqlite connection
 	db, err := gorm.Open(sqlite.Open(dbSourceName), &gorm.Config{})
 	if err != nil {
 		logger.Errorf("error opening sqlite %v", err)
 		return nil, err
 	}
 
-	// migrate schema
-	err = db.AutoMigrate()
-	if err != nil {
-		logger.Errorf("sqlite automigration error: %v", err)
-		return nil, err
+	// check tables
+	if !db.Migrator().HasTable(&schemas.Rate{}) {
+		logger.Info("tables not found, creating...")
+		err := db.Migrator().CreateTable(&schemas.Rate{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create table: %w", err)
+		}
 	}
 
 	return db, nil
