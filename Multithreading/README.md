@@ -19,7 +19,7 @@ http://viacep.com.br/ws/" + cep + "/json/
 ## How To
 
 ```
-go build main.go
+git clone 
 ```
 
 ```
@@ -27,4 +27,46 @@ go run Multithreading/main.go
 ```
 
 #### Expected:
+
+Para simular API BrasilAPI com resposta mais rápida, configure o *tempo de resposta da thread da ViaCep para:
+- ser maior que a thread da BrasilAPI
+- ser menor que o valor de apiTimeout
+```go
+if source == "ViaCepAPI" {
+    time.Sleep(time.Millisecond * 2000) // Simulate delay for ViaCepAPI
+}
+```
+output:
+```go
+Received from brasilapi: source:BrasilAPI - Rua Vitorino Carmilo, Barra Funda - São Paulo, SP, 01153000
+```
+
+Para simular API ViaCep com resposta mais rápida, configure o *tempo de resposta da thread BrasilAPI para:
+- ser maior que o da thread da ViaCep.
+- Ser menor que o valor de apiTimeout.
+```go
+if source == "BrasilAPI" {
+    time.Sleep(time.Millisecond * 2000) // Simulate delay for BrasilAPI
+}
+```
+  output:
+```go
+Received from viacep: source:ViaCepAPI - Rua Vitorino Carmilo, Barra Funda - São Paulo, São Paulo, 01153-000
+```
+
+Para simular o tempo de resposta excedendo o limite, configure o *tempo de resposta para ambas as threads:
+- maior que o valor de apiTimeout.
+```go
+if source == "ViaCepAPI" {
+    time.Sleep(time.Second * 2) // Simulate delay for ViaCepAPI
+}
+if source == "BrasilAPI" {
+    time.Sleep(time.Second * 2) // Simulate delay for BrasilAPI
+}
+```
+output:
+```go
+Timeout
+```
+
 ### Tools
