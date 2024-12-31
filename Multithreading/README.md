@@ -23,8 +23,7 @@ go build main.go
 ```
 
 ```
-// go run Client-Server-API/server/server.go
-// go run Client-Server-API/client/client.go
+go run Multithreading/main.go
 ```
 
 #### Expected:
