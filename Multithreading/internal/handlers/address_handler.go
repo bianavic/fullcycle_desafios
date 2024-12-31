@@ -12,8 +12,10 @@ type Result struct {
 	Error  error
 }
 
-func FetchAddressHandler(ctx context.Context, cep, source string, resultChan chan Result) {
-	address, err := api.FetchAddress(ctx, cep, source)
+type FetchAddressFunc func(ctx context.Context, cep, source string) (interface{}, error)
+
+func FetchAddressHandler(ctx context.Context, cep, source string, fetchAddressFunc FetchAddressFunc, resultChan chan Result) {
+	address, err := fetchAddressFunc(ctx, cep, source)
 	if err != nil {
 		resultChan <- Result{Source: source, Error: err}
 		return

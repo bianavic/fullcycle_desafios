@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/bianavic/fullcycle_desafios/infra/api"
 	"github.com/bianavic/fullcycle_desafios/internal/handlers"
 	"os"
 	"time"
@@ -22,8 +23,8 @@ func main() {
 
 	resultChan := make(chan handlers.Result)
 
-	go handlers.FetchAddressHandler(ctx, cep, "BrasilAPI", resultChan)
-	go handlers.FetchAddressHandler(ctx, cep, "ViaCepAPI", resultChan)
+	go handlers.FetchAddressHandler(ctx, cep, "BrasilAPI", api.FetchAddress, resultChan)
+	go handlers.FetchAddressHandler(ctx, cep, "ViaCepAPI", api.FetchAddress, resultChan)
 
 	select {
 	case result := <-resultChan:
