@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const apiTimeout = 1 * time.Second
+var apiTimeout = 1 * time.Second
 
 func main() {
 	if len(os.Args) < 2 {
