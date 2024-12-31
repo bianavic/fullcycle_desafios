@@ -28,7 +28,12 @@ git clone https://github.com/bianavic/fullcycle_desafios.git
 cd fullcycle_desafios/Multithreading
 ```
 
-3- rode o comando com o cep desejado (exemplo abaixo)
+3- instale as dependencias
+```shell
+go mod tidy
+```
+
+4- rode o comando com o cep desejado (exemplo abaixo)
 ```shell
 go run main.go 01153000
 ```
