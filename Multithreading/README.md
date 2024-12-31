@@ -18,12 +18,19 @@ http://viacep.com.br/ws/" + cep + "/json/
 
 ## How To
 
+1- clone o respositorio
 ```
-git clone 
+git clone https://github.com/bianavic/fullcycle_desafios.git
 ```
 
+2- acesse a pasta do desafio
+```shell
+cd fullcycle_desafios/Multithreading
 ```
-go run Multithreading/main.go
+
+3- rode o comando com o cep desejado (exemplo abaixo)
+```shell
+go run main.go 01153000
 ```
 
 #### Expected:
@@ -33,7 +40,7 @@ Para simular API BrasilAPI com resposta mais rápida, configure o *tempo de resp
 - ser menor que o valor de apiTimeout
 ```go
 if source == "ViaCepAPI" {
-    time.Sleep(time.Millisecond * 2000) // Simulate delay for ViaCepAPI
+    time.Sleep(time.Second * 4) // Simulate delay for ViaCepAPI
 }
 ```
 output:
@@ -46,7 +53,7 @@ Para simular API ViaCep com resposta mais rápida, configure o *tempo de respost
 - Ser menor que o valor de apiTimeout.
 ```go
 if source == "BrasilAPI" {
-    time.Sleep(time.Millisecond * 2000) // Simulate delay for BrasilAPI
+ time.Sleep(time.Second * 4) // Simulate delay for BrasilAPI
 }
 ```
   output:
@@ -57,11 +64,12 @@ Received from viacep: source:ViaCepAPI - Rua Vitorino Carmilo, Barra Funda - Sã
 Para simular o tempo de resposta excedendo o limite, configure o *tempo de resposta para ambas as threads:
 - maior que o valor de apiTimeout.
 ```go
-if source == "ViaCepAPI" {
-    time.Sleep(time.Second * 2) // Simulate delay for ViaCepAPI
-}
 if source == "BrasilAPI" {
-    time.Sleep(time.Second * 2) // Simulate delay for BrasilAPI
+ time.Sleep(time.Second * 4) // Simulate delay for BrasilAPI
+ address = &BrasilAPIResponse{}
+ } else {
+ time.Sleep(time.Second * 4) // Simulate delay for ViaCepAPI
+ address = &ViaCepAPIResponse{}
 }
 ```
 output:
