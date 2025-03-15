@@ -43,3 +43,18 @@ Teste seu rate limiter sob diferentes condições de carga para garantir que ele
 - Testes automatizados demonstrando a eficácia e a robustez do rate limiter.
 - Utilize docker/docker-compose para que possamos realizar os testes de sua aplicação.
 - O servidor web deve responder na porta 8080.
+
+### Dependencias
+
+```
+go get github.com/go-redis/redis/v8
+go get github.com/joho/godotenv
+go get github.com/stretchr/testify
+```
+
+run redis
+```
+docker-compose up -d redis
+```
+
+### Configuração e Execução
