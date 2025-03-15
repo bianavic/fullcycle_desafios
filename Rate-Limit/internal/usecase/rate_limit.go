@@ -36,9 +36,10 @@ func (r *RateLimiter) Allow(ctx context.Context, ip, token string) error {
 		if err := r.checkRateLimit(ctx, token, r.rateLimitToken); err != nil {
 			return err
 		}
+		return nil // if token limit is not exceeded, allow the request
 	}
 
-	// Check rate limit for IP
+	// check rate limit for IP
 	return r.checkRateLimit(ctx, ip, r.rateLimitIP)
 }
 
