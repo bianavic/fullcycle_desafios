@@ -1,9 +1,8 @@
-package middleware
+package ratelimit
 
 import (
 	"context"
 	"github.com/bianavic/fullcycle_desafios/internal/storage"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,7 +25,7 @@ func TestRateLimiterMiddleware(t *testing.T) {
 	rateLimitIP := 1
 	rateLimitToken := 1
 	blockTime := 1 * time.Minute
-	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
+	limiter := NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
 
 	handler := RateLimiterMiddleware(limiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

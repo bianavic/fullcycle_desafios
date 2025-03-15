@@ -1,14 +1,13 @@
-package middleware
+package ratelimit
 
 import (
 	"context"
-	usecase "github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"net/http"
 	"strings"
 )
 
 // RateLimiterMiddleware creates a middleware to enforce rate limiting.
-func RateLimiterMiddleware(limiter *usecase.RateLimiter) func(http.Handler) http.Handler {
+func RateLimiterMiddleware(limiter *RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// extract IP and Token from request

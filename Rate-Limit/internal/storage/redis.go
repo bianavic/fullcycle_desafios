@@ -31,6 +31,11 @@ func NewRedisStorage(addr, password string) (*RedisStorage, error) {
 	return &RedisStorage{client: client}, nil
 }
 
+// GetClient returns the Redis client instance.
+func (r *RedisStorage) GetClient() *redis.Client {
+	return r.client
+}
+
 // Increment increments the value for a key and returns the new value.
 func (r *RedisStorage) Increment(ctx context.Context, key string, expiration time.Duration) (int, error) {
 	val, err := r.client.Incr(ctx, key).Result()
