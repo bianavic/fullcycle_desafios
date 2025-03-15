@@ -15,8 +15,13 @@ func RateLimiterMiddleware(limiter *RateLimiter) func(http.Handler) http.Handler
 			token := r.Header.Get("API_KEY")
 
 			// check rate limit
-			if err := limiter.Allow(context.Background(), ip, token); err != nil {
-				http.Error(w, "you have reached the maximum number of requests or actions allowed within a certain time frame", http.StatusTooManyRequests)
+			err := limiter.Allow(context.Background(), ip, token)
+			if err != nil {
+				if err == ErrRateLimitExceeded {
+					http.Error(w, "you have reached the maximum number of requests or actions allowed within a certain time frame", http.StatusTooManyRequests)
+				} else {
+					http.Error(w, "internal server error", http.StatusInternalServerError)
+				}
 				return
 			}
 

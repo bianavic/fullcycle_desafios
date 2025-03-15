@@ -2,13 +2,27 @@ package ratelimit
 
 import (
 	"context"
+	"errors"
+	"github.com/bianavic/fullcycle_desafios/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/bianavic/fullcycle_desafios/internal/storage"
 )
+
+type MockStorage struct{}
+
+func (m *MockStorage) Increment(ctx context.Context, key string, expiration time.Duration) (int, error) {
+	return 0, errors.New("increment error")
+}
+
+func (m *MockStorage) Get(ctx context.Context, key string) (int, error) {
+	return 0, nil
+}
+
+func (m *MockStorage) Set(ctx context.Context, key string, value int, expiration time.Duration) error {
+	return nil
+}
 
 func TestRateLimiterByIP(t *testing.T) {
 	// initialize Redis storage
@@ -38,33 +52,110 @@ func TestRateLimiterByIP(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	// test cases
-	tests := []struct {
-		name       string
-		ip         string
-		expectCode int
-	}{
-		{"First request (should return status ok)", "192.168.1.1", http.StatusOK},
-		{"Second request (should return status ok)", "192.168.1.1", http.StatusOK},
-		{"Third request (should return status ok)", "192.168.1.1", http.StatusOK},
-		{"Fourth request (should return status ok)", "192.168.1.1", http.StatusOK},
-		{"Fifth request (should return status ok)", "192.168.1.1", http.StatusOK},
-		{"Sixth request (should be rate limited)", "192.168.1.1", http.StatusTooManyRequests},
-	}
+	t.Run("First request (should return status ok)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", server.URL, nil)
-			req.RemoteAddr = tt.ip
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				t.Fatalf("Failed to send request: %v", err)
-			}
-			defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
 
-			if resp.StatusCode != tt.expectCode {
-				t.Errorf("Expected status %d, got %d", tt.expectCode, resp.StatusCode)
-			}
-		})
-	}
+	t.Run("Second request (should return status ok)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
+
+	t.Run("Third request (should return status ok)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
+
+	t.Run("Fourth request (should return status ok)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
+
+	t.Run("Fifth request (should return status ok)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
+
+	t.Run("Sixth request (should be rate limited)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", server.URL, nil)
+		req.RemoteAddr = "192.168.1.1"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusTooManyRequests {
+			t.Errorf("Expected status %d, got %d", http.StatusTooManyRequests, resp.StatusCode)
+		}
+	})
+
+	t.Run("Increment error (should return internal server error)", func(t *testing.T) {
+		mockLimiter := NewRateLimiter(&MockStorage{}, rateLimitIP, rateLimitToken, blockTime)
+		mockHandler := RateLimiterMiddleware(mockLimiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		}))
+
+		mockServer := httptest.NewServer(mockHandler)
+		defer mockServer.Close()
+
+		req, _ := http.NewRequest("GET", mockServer.URL, nil)
+		req.RemoteAddr = "192.168.1.2"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status %d, got %d", http.StatusInternalServerError, resp.StatusCode)
+		}
+	})
 }
