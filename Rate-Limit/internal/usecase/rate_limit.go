@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
-	"github.com/bianavic/fullcycle_desafios/internal/db"
+	"github.com/bianavic/fullcycle_desafios/internal/storage"
 	"time"
 )
 
@@ -13,14 +13,14 @@ var (
 
 // RateLimiter handles rate limiting logic.
 type RateLimiter struct {
-	storage        db.Storage
+	storage        storage.StorageStrategy
 	rateLimitIP    int
 	rateLimitToken int
 	blockTime      time.Duration
 }
 
 // NewRateLimiter creates a new RateLimiter instance.
-func NewRateLimiter(storage db.Storage, rateLimitIP, rateLimitToken int, blockTime time.Duration) *RateLimiter {
+func NewRateLimiter(storage storage.StorageStrategy, rateLimitIP, rateLimitToken int, blockTime time.Duration) *RateLimiter {
 	return &RateLimiter{
 		storage:        storage,
 		rateLimitIP:    rateLimitIP,
