@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"github.com/bianavic/fullcycle_desafios/internal/db"
+	"github.com/bianavic/fullcycle_desafios/internal/storage"
 	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"net/http"
 	"net/http/httptest"
@@ -11,14 +11,14 @@ import (
 )
 
 func TestRateLimiterMiddleware(t *testing.T) {
-	redisStrategy := usecase.NewRedisStrategy("localhost:6379")
+	redisStrategy := storage.NewRedisStrategy("localhost:6379")
 	redisClient := redisStrategy.GetClient()
 
 	if err := redisClient.FlushAll(context.Background()).Err(); err != nil {
 		t.Fatalf("Failed to clear Redis storage: %v", err)
 	}
 
-	redisStorage, err := db.NewRedisStorage("localhost:6379", "")
+	redisStorage, err := storage.NewRedisStorage("localhost:6379", "")
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
