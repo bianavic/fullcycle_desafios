@@ -3,15 +3,15 @@ package test
 import (
 	"context"
 	"errors"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/bianavic/fullcycle_desafios/internal/ratelimit"
+	"github.com/bianavic/fullcycle_desafios/internal/middleware"
 	"github.com/bianavic/fullcycle_desafios/internal/repository/storage"
+	"github.com/bianavic/fullcycle_desafios/internal/usecase"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockStorage struct {
@@ -100,11 +100,6 @@ func TestRateLimiterByIP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
-	//
-	//// clear Redis storage before test
-	//if err := redisStorage.GetClient().FlushAll(context.Background()).Err(); err != nil {
-	//	t.Fatalf("Failed to clear Redis storage: %v", err)
-	//}
 
 	// set rate limit to 5 requests per second for IP
 	rateLimitIP := 5
@@ -113,7 +108,7 @@ func TestRateLimiterByIP(t *testing.T) {
 	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
 
 	// create HTTP handler with rate limiter middleware
-	handler := ratelimit.RateLimiterMiddleware(limiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.RateLimiterMiddleware(limiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))

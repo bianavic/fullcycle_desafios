@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/bianavic/fullcycle_desafios/internal/repository/storage"
@@ -35,19 +36,22 @@ func (r *RateLimiter) Allow(ctx context.Context, ip, token string) error {
 	// check rate limit for token if provided
 	if token != "" {
 		if err := r.checkRateLimit(ctx, token, r.rateLimitToken); err != nil {
+			log.Printf("rate limit exceeded for token: %s", token)
 			return err
 		}
-		return nil // If token limit is not exceeded, allow the request
+		log.Printf("request allowed for token: %s", token)
+		return nil
 	}
 
 	// Check rate limit for IP
 	return r.checkRateLimit(ctx, ip, r.rateLimitIP)
 }
 
-// checkRateLimit checks the rate limit for a given key.
-func (r *RateLimiter) checkRateLimit(ctx context.Context, key string, rateLimit int) error {
-	count, err := r.storage.Increment(ctx, key, r.blockTime)
+// checkRateLimit checks the rate limit for a given ip.
+func (r *RateLimiter) checkRateLimit(ctx context.Context, ip string, rateLimit int) error {
+	count, err := r.storage.Increment(ctx, ip, r.blockTime)
 	if err != nil {
+		log.Printf("Rate limit exceeded for IP: %s", ip)
 		return err
 	}
 
@@ -55,5 +59,6 @@ func (r *RateLimiter) checkRateLimit(ctx context.Context, key string, rateLimit 
 		return ErrRateLimitExceeded
 	}
 
+	log.Printf("request allowed for IP: %s", ip)
 	return nil
 }

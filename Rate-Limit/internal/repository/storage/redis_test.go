@@ -83,7 +83,7 @@ func TestRedis_Increment(t *testing.T) {
 		_, err := storage.Increment(ctx, key, expiration)
 
 		assert.Error(t, err)
-		assert.Equal(t, "failed to set expiration", err.Error())
+		assert.Equal(t, "failed to set expiration for key test_key: failed to set expiration", err.Error())
 	})
 }
 

@@ -1,4 +1,4 @@
-package ratelimit
+package middleware
 
 import (
 	"context"
@@ -31,18 +31,17 @@ func TestRateLimiterMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
-	//
-	//// clear Redis storage before test
-	//if err = redisStorage.GetClient().FlushAll(context.Background()).Err(); err != nil {
-	//	t.Fatalf("Failed to clear Redis storage: %v", err)
-	//}
+
+	// clear Redis storage before each test
+	ctx := context.Background()
+	redisStorage.GetClient().FlushAll(ctx)
 
 	rateLimitIP := 1
 	rateLimitToken := 1
 	blockTime := 1 * time.Minute
 	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
 
-	handler := RateLimiterMiddleware(limiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := RateLimiterMiddleware(limiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))
@@ -83,7 +82,7 @@ func TestRateLimiterMiddleware(t *testing.T) {
 		mockLimiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
 
 		// Create a new handler with the mock limiter
-		mockHandler := RateLimiterMiddleware(mockLimiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mockHandler := RateLimiterMiddleware(mockLimiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
 		}))

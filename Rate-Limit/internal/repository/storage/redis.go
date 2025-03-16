@@ -3,8 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 // Redis implements the StorageStrategy interface using Redis.
@@ -39,13 +40,13 @@ func (r *Redis) GetClient() RedisClient {
 func (r *Redis) Increment(ctx context.Context, key string, expiration time.Duration) (int, error) {
 	val, err := r.client.Incr(ctx, key).Result()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to increment key %s: %w", key, err)
 	}
 
 	// Set expiration if this is the first increment
 	if val == 1 {
 		if err := r.client.Expire(ctx, key, expiration).Err(); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("failed to set expiration for key %s: %w", key, err)
 		}
 	}
 
@@ -58,12 +59,20 @@ func (r *Redis) Get(ctx context.Context, key string) (int, error) {
 	if err == redis.Nil {
 		return 0, nil
 	} else if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
 	}
 	return val, nil
 }
 
 // Set sets the value for a key with an expiration time.
 func (r *Redis) Set(ctx context.Context, key string, value int, expiration time.Duration) error {
-	return r.client.Set(ctx, key, value, expiration).Err()
+	if err := r.client.Set(ctx, key, value, expiration).Err(); err != nil {
+		return fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+	return nil
+}
+
+// FlushAll clears all keys in the Redis database.
+func (r *Redis) FlushAll(ctx context.Context) *redis.StatusCmd {
+	return r.client.FlushAll(ctx)
 }
