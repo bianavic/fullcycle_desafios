@@ -37,9 +37,11 @@ func TestRateLimiterMiddleware(t *testing.T) {
 	redisStorage.GetClient().FlushAll(ctx)
 
 	rateLimitIP := 1
-	rateLimitToken := 1
 	blockTime := 1 * time.Minute
-	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
+	tokenConfigs := map[string]usecase.TokenConfig{
+		"test_token": {RateLimit: 1, BlockTime: blockTime},
+	}
+	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, blockTime, tokenConfigs)
 
 	handler := RateLimiterMiddleware(limiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -79,7 +81,7 @@ func TestRateLimiterMiddleware(t *testing.T) {
 	t.Run("Internal server error (should return status 500)", func(t *testing.T) {
 		// Use a mock storage that returns an error
 		mockStorage := &MockStorage{}
-		mockLimiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
+		mockLimiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
 
 		// Create a new handler with the mock limiter
 		mockHandler := RateLimiterMiddleware(mockLimiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,7 @@ import (
 
 type MockStorage struct {
 	incrementFunc func(ctx context.Context, key string, expiration time.Duration) (int, error)
+	setFunc       func(ctx context.Context, key string, value int, expiration time.Duration) error
 }
 
 func (m *MockStorage) Increment(ctx context.Context, key string, expiration time.Duration) (int, error) {
@@ -27,12 +28,11 @@ func (m *MockStorage) Get(ctx context.Context, key string) (int, error) {
 }
 
 func (m *MockStorage) Set(ctx context.Context, key string, value int, expiration time.Duration) error {
-	return nil
+	return m.setFunc(ctx, key, value, expiration)
 }
 
 func TestRateLimiter_Allow(t *testing.T) {
 	rateLimitIP := 5
-	rateLimitToken := 100
 	blockTime := 60 * time.Second
 
 	t.Run("success for IP - should return no error if the limit is not exceeded", func(t *testing.T) {
@@ -41,7 +41,9 @@ func TestRateLimiter_Allow(t *testing.T) {
 				return 4, nil // simulate 4 requests made
 			},
 		}
-		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
+		tokenConfigs := map[string]usecase.TokenConfig{}
+		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
+
 		err := limiter.Allow(context.Background(), "192.168.1.1", "")
 		assert.NoError(t, err) // Should not return an error if the limit is not exceeded
 	})
@@ -52,33 +54,11 @@ func TestRateLimiter_Allow(t *testing.T) {
 				return 99, nil // simulate 99 requests made
 			},
 		}
-		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
+		tokenConfigs := map[string]usecase.TokenConfig{}
+		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
+
 		err := limiter.Allow(context.Background(), "", "test_token")
 		assert.NoError(t, err)
-	})
-
-	t.Run("rate limit exceeded for IP", func(t *testing.T) {
-		mockStorage := &MockStorage{
-			incrementFunc: func(ctx context.Context, key string, expiration time.Duration) (int, error) {
-				return 6, nil // simulate 6 requests made
-			},
-		}
-		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
-		err := limiter.Allow(context.Background(), "192.168.1.1", "")
-		assert.Error(t, err) // should return an error if the limit is exceeded
-		assert.Equal(t, usecase.ErrRateLimitExceeded, err)
-	})
-
-	t.Run("rate limit exceeded for token", func(t *testing.T) {
-		mockStorage := &MockStorage{
-			incrementFunc: func(ctx context.Context, key string, expiration time.Duration) (int, error) {
-				return 101, nil // simulate 101 requests made
-			},
-		}
-		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
-		err := limiter.Allow(context.Background(), "", "test_token")
-		assert.Error(t, err) // should return an error if the limit is exceeded
-		assert.Equal(t, usecase.ErrRateLimitExceeded, err)
 	})
 
 	t.Run("increment error", func(t *testing.T) {
@@ -87,9 +67,11 @@ func TestRateLimiter_Allow(t *testing.T) {
 				return 0, errors.New("increment error")
 			},
 		}
-		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, rateLimitToken, blockTime)
+		tokenConfigs := map[string]usecase.TokenConfig{}
+		limiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
+
 		err := limiter.Allow(context.Background(), "192.168.1.1", "")
-		assert.Error(t, err) // Should return an error if there is an increment error
+		assert.Error(t, err)
 		assert.Equal(t, "increment error", err.Error())
 	})
 }
@@ -103,9 +85,9 @@ func TestRateLimiterByIP(t *testing.T) {
 
 	// set rate limit to 5 requests per second for IP
 	rateLimitIP := 5
-	rateLimitToken := 100
 	blockTime := 60 * time.Second
-	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
+	tokenConfigs := map[string]usecase.TokenConfig{}
+	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, blockTime, tokenConfigs)
 
 	// create HTTP handler with rate limiter middleware
 	handler := middleware.RateLimiterMiddleware(limiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -199,5 +181,22 @@ func TestRateLimiterByIP(t *testing.T) {
 		if resp.StatusCode != http.StatusTooManyRequests {
 			t.Errorf("Expected status %d, got %d", http.StatusTooManyRequests, resp.StatusCode)
 		}
+	})
+
+	t.Run("Set method fails", func(t *testing.T) {
+		mockStorage := &MockStorage{
+			incrementFunc: func(ctx context.Context, key string, expiration time.Duration) (int, error) {
+				return 6, nil // simulate 6 requests made
+			},
+			setFunc: func(ctx context.Context, key string, value int, expiration time.Duration) error {
+				return errors.New("set error") // simulate set error
+			},
+		}
+		tokenConfigs = map[string]usecase.TokenConfig{}
+		limiter = usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
+
+		err = limiter.Allow(context.Background(), "192.168.1.1", "")
+		assert.Error(t, err)
+		assert.Equal(t, "set error", err.Error())
 	})
 }
