@@ -4,10 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bianavic/fullcycle_desafios/internal/config"
-	"github.com/bianavic/fullcycle_desafios/internal/middleware"
-	"github.com/bianavic/fullcycle_desafios/internal/repository/storage"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
+	"github.com/bianavic/fullcycle_desafios/internal/infra/config"
+	limiter "github.com/bianavic/fullcycle_desafios/internal/infra/limiter"
+	"github.com/bianavic/fullcycle_desafios/internal/infra/middleware"
 )
 
 func main() {
@@ -18,35 +17,35 @@ func main() {
 	}
 
 	// initialize storage (Redis or in-memory)
-	var storageStrategy storage.StorageStrategy
+	var storageStrategy limiter.StorageStrategy
 	if cfg.UseRedis {
 		redisAddr := cfg.RedisHost + ":" + cfg.RedisPort
-		redisStorage, err := storage.NewRedis(redisAddr, cfg.RedisPassword)
+		redisStorage, err := limiter.NewRedis(redisAddr, cfg.RedisPassword)
 		if err != nil {
 			log.Fatalf("Failed to initialize Redis storage: %v", err)
 		}
 		storageStrategy = redisStorage
 	} else {
-		storageStrategy = storage.NewInMemory()
+		storageStrategy = limiter.NewInMemory()
 	}
 
 	// Convert config.TokenConfigs to usecase.TokenConfigs
-	tokenConfigs := make(map[string]usecase.TokenConfig)
+	tokenConfigs := make(map[string]limiter.TokenConfig)
 	for k, v := range cfg.TokenConfigs {
-		tokenConfigs[k] = usecase.TokenConfig{
+		tokenConfigs[k] = limiter.TokenConfig{
 			RateLimit: v.RateLimit,
 			BlockTime: v.BlockTime,
 		}
 	}
 
 	// Initialize rate limiter
-	limiter := usecase.NewRateLimiter(storageStrategy, cfg.RateLimitIP, cfg.BlockTime, tokenConfigs)
+	limiter := limiter.NewRateLimiter(storageStrategy, cfg.RateLimitIP, cfg.BlockTime, tokenConfigs)
 
 	// create HTTP server with rate limiter middleware
 	http.Handle("/", middleware.RateLimiterMiddleware(limiter, http.HandlerFunc(handler)))
 
-	log.Println("server started on :8082")
-	if err := http.ListenAndServe(":8082", nil); err != nil {
+	log.Println("server started on :8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }

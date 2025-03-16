@@ -3,58 +3,73 @@
 ### Objetivo
 Desenvolver um rate limiter em Go que possa ser configurado para limitar o número máximo de requisições por segundo com base em um endereço IP específico ou em um token de acesso.
 
-### Descricao
-O objetivo deste desafio é criar um rate limiter em Go que possa ser utilizado para controlar o tráfego de requisições para um serviço web. O rate limiter deve ser capaz de limitar o número de requisições com base em dois critérios:
-
-1- Endereço IP: O rate limiter deve restringir o número de requisições recebidas de um único endereço IP dentro de um intervalo de tempo definido.
-
-2- Token de Acesso: O rate limiter deve também poderá limitar as requisições baseadas em um token de acesso único, permitindo diferentes limites de tempo de expiração para diferentes tokens. O Token deve ser informado no header no seguinte formato:
-API_KEY: <TOKEN>
-
-3- As configurações de limite do token de acesso devem se sobrepor as do IP. Ex: Se o limite por IP é de 10 req/s e a de um determinado token é de 100 req/s, o rate limiter deve utilizar as informações do token.
-
-### Requisitos
-- O rate limiter deve poder trabalhar como um middleware que é injetado ao servidor web
-- O rate limiter deve permitir a configuração do número máximo de requisições permitidas por segundo.
-- O rate limiter deve ter ter a opção de escolher o tempo de bloqueio do IP ou do Token caso a quantidade de requisições tenha sido excedida.
-- As configurações de limite devem ser realizadas via variáveis de ambiente ou em um arquivo “.env” na pasta raiz.
-- Deve ser possível configurar o rate limiter tanto para limitação por IP quanto por token de acesso.
-- O sistema deve responder adequadamente quando o limite é excedido:
-  - Código HTTP: 429
-  - Mensagem: you have reached the maximum number of requests or actions allowed within a certain time frame
-- Todas as informações de "limiter” devem ser armazenadas e consultadas de um banco de dados Redis. Você pode utilizar docker-compose para subir o Redis.
-- Crie uma “strategy” que permita trocar facilmente o Redis por outro mecanismo de persistência.
-- A lógica do limiter deve estar separada do middleware.
-
-### Exemplos:
-
-1- Limitação por IP: Suponha que o rate limiter esteja configurado para permitir no máximo 5 requisições por segundo por IP. Se o IP 192.168.1.1 enviar 6 requisições em um segundo, a sexta requisição deve ser bloqueada.
-
-2- Limitação por Token: Se um token abc123 tiver um limite configurado de 10 requisições por segundo e enviar 11 requisições nesse intervalo, a décima primeira deve ser bloqueada.
-
-3- Nos dois casos acima, as próximas requisições poderão ser realizadas somente quando o tempo total de expiração ocorrer. Ex: Se o tempo de expiração é de 5 minutos, determinado IP poderá realizar novas requisições somente após os 5 minutos.
-
-### Dicas:
-Teste seu rate limiter sob diferentes condições de carga para garantir que ele funcione conforme esperado em situações de alto tráfego.
-
-### Entrega:
-- O código-fonte completo da implementação.
-- Documentação explicando como o rate limiter funciona e como ele pode ser configurado.
-- Testes automatizados demonstrando a eficácia e a robustez do rate limiter.
-- Utilize docker/docker-compose para que possamos realizar os testes de sua aplicação.
-- O servidor web deve responder na porta 8080.
-
-### Dependencias
-
 ```
-go get github.com/go-redis/redis/v8
-go get github.com/joho/godotenv
-go get github.com/stretchr/testify
+.
+├── README.md
+├── cmd
+│   └── api
+│       └── main.go
+├── docker-compose.yaml
+├── go.mod
+├── go.sum
+├── internal
+│   ├── config
+│   │   └── config.go
+│   ├── ratelimit
+│   │   ├── middleware.go
+│   │   └── middleware_test.go
+│   ├── repository
+│   │   └── storage
+│   │       ├── in_memory.go
+│   │       ├── mock
+│   │       │   ├── mock_redis_client.go
+│   │       │   └── mock_storage_strategy.go
+│   │       ├── redis.go
+│   │       ├── redis_client.go
+│   │       ├── redis_test.go
+│   │       └── storage_strategy.go
+│   └── usecase
+│       ├── rate_limiter.go
+│       └── test
+│           └── rate_limiter_test.go
+└── stress
+    ├── test_rate_limit.sh
+    └── test_rate_limit_over.sh
 ```
 
-run redis
-```
-docker-compose up -d redis
-```
 
-### Configuração e Execução
+## Executando a Aplicação
+
+1. Clone o repositório.
+2. Navegue até o diretório `Rate-Limit`
+3. Execute ` docker-compose up --build` para iniciar os contêineres
+
+## Testando
+
+1. Limitação por IP:
+```bash
+for i in {1..6}; do curl -X GET http://localhost:8080/; done
+```
+A sexta requisição deve retornar 429 Too Many Requests. Aguarde 60 segundos para poder fazer outra requisição.
+
+2. Limitação por Token:
+
+- Token 1 (10 requisições por 60 segundos):
+```bash
+for i in {1..11}; do curl -X GET -H "API_KEY: abc123" http://localhost:8080/; done
+```
+A décima primeira requisição deve retornar 429 Too Many Requests. Aguarde 60 segundos para poder fazer outra requisição.
+
+- Token 2 (20 requisições por 65 segundos):
+```bash
+for i in {1..21}; do curl -X GET -H "API_KEY: def456" http://localhost:8080/; done
+```
+A vigésima primeira requisição deve retornar 429 Too Many Requests. Aguarde 65 segundos para poder fazer outra requisição.
+
+## Redis commander
+1. Navegue até `http://127.0.0.1:8081/` 
+2. A cada requisição, dê um refresh na página para visualizar detalhes relacionados ao rate limit.
+![redis_commander1.png](assets/images/redis_commander1.png)
+
+### Testes Automatizados:
+localizados em `internal/usecase/test/rate_limiter_test.go`, `internal/repository/storage/redis_test.go` e `internal/middleware/middleware_test.go`

@@ -8,8 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bianavic/fullcycle_desafios/internal/repository/storage"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
+	limiter "github.com/bianavic/fullcycle_desafios/internal/infra/limiter"
 )
 
 type MockStorage struct{}
@@ -27,7 +26,7 @@ func (m *MockStorage) Set(ctx context.Context, key string, value int, expiration
 }
 
 func TestRateLimiterMiddleware(t *testing.T) {
-	redisStorage, err := storage.NewRedis("localhost:6379", "")
+	redisStorage, err := limiter.NewRedis("localhost:6379", "")
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
@@ -38,12 +37,12 @@ func TestRateLimiterMiddleware(t *testing.T) {
 
 	rateLimitIP := 1
 	blockTime := 1 * time.Minute
-	tokenConfigs := map[string]usecase.TokenConfig{
+	tokenConfigs := map[string]limiter.TokenConfig{
 		"test_token": {RateLimit: 1, BlockTime: blockTime},
 	}
-	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, blockTime, tokenConfigs)
+	l := limiter.NewRateLimiter(redisStorage, rateLimitIP, blockTime, tokenConfigs)
 
-	handler := RateLimiterMiddleware(limiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := RateLimiterMiddleware(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))
@@ -81,7 +80,7 @@ func TestRateLimiterMiddleware(t *testing.T) {
 	t.Run("Internal server error (should return status 500)", func(t *testing.T) {
 		// Use a mock storage that returns an error
 		mockStorage := &MockStorage{}
-		mockLimiter := usecase.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
+		mockLimiter := limiter.NewRateLimiter(mockStorage, rateLimitIP, blockTime, tokenConfigs)
 
 		// Create a new handler with the mock limiter
 		mockHandler := RateLimiterMiddleware(mockLimiter, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

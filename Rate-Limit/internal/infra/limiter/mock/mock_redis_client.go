@@ -2,7 +2,7 @@
 // Source: redis_client.go
 
 // Package mock is a generated GoMock package.
-package mock_storage
+package mock
 
 import (
 	context "context"

@@ -1,4 +1,4 @@
-package storage
+package limiter
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	mock_storage "github.com/bianavic/fullcycle_desafios/internal/repository/storage/mock"
+	"github.com/bianavic/fullcycle_desafios/internal/infra/limiter/mock"
 )
 
 func setupRedisClient() *redis.Client {
@@ -74,7 +74,7 @@ func TestRedis_Increment(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockClient := mock_storage.NewMockRedisClient(ctrl)
+		mockClient := mock.NewMockRedisClient(ctrl)
 		storage = &Redis{client: mockClient}
 
 		mockClient.EXPECT().Incr(ctx, key).Return(redis.NewIntResult(1, nil))
