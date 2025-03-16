@@ -67,8 +67,3 @@ func (r *Redis) Get(ctx context.Context, key string) (int, error) {
 func (r *Redis) Set(ctx context.Context, key string, value int, expiration time.Duration) error {
 	return r.client.Set(ctx, key, value, expiration).Err()
 }
-
-// FlushAll clears all keys in the Redis database.
-func (r *Redis) FlushAll(ctx context.Context) *redis.StatusCmd {
-	return r.client.FlushAll(ctx)
-}

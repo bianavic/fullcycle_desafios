@@ -100,11 +100,11 @@ func TestRateLimiterByIP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
-
-	// clear Redis storage before test
-	if err := redisStorage.GetClient().FlushAll(context.Background()).Err(); err != nil {
-		t.Fatalf("Failed to clear Redis storage: %v", err)
-	}
+	//
+	//// clear Redis storage before test
+	//if err := redisStorage.GetClient().FlushAll(context.Background()).Err(); err != nil {
+	//	t.Fatalf("Failed to clear Redis storage: %v", err)
+	//}
 
 	// set rate limit to 5 requests per second for IP
 	rateLimitIP := 5
