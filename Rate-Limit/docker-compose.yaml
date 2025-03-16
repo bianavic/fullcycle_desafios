@@ -1,9 +1,25 @@
 services:
+
+  app:
+    build: .
+    ports:
+      - "8080:8082"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    networks:
+      - app-network
+
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
-volumes:
-  redis_data:
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
