@@ -1,13 +1,16 @@
-package ratelimit
+package test
 
 import (
 	"context"
 	"errors"
-	"github.com/bianavic/fullcycle_desafios/internal/storage"
+	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/bianavic/fullcycle_desafios/internal/ratelimit"
+	"github.com/bianavic/fullcycle_desafios/internal/repository/storage"
 )
 
 type MockStorage struct{}
@@ -26,7 +29,7 @@ func (m *MockStorage) Set(ctx context.Context, key string, value int, expiration
 
 func TestRateLimiterByIP(t *testing.T) {
 	// initialize Redis storage
-	redisStorage, err := storage.NewRedisStorage("localhost:6379", "")
+	redisStorage, err := storage.NewRedis("localhost:6379", "")
 	if err != nil {
 		t.Fatalf("Failed to initialize Redis storage: %v", err)
 	}
@@ -40,10 +43,10 @@ func TestRateLimiterByIP(t *testing.T) {
 	rateLimitIP := 5
 	rateLimitToken := 100
 	blockTime := 60 * time.Second
-	limiter := NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
+	limiter := usecase.NewRateLimiter(redisStorage, rateLimitIP, rateLimitToken, blockTime)
 
 	// create HTTP handler with rate limiter middleware
-	handler := RateLimiterMiddleware(limiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := ratelimit.RateLimiterMiddleware(limiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))
@@ -137,8 +140,8 @@ func TestRateLimiterByIP(t *testing.T) {
 	})
 
 	t.Run("Increment error (should return internal server error)", func(t *testing.T) {
-		mockLimiter := NewRateLimiter(&MockStorage{}, rateLimitIP, rateLimitToken, blockTime)
-		mockHandler := RateLimiterMiddleware(mockLimiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mockLimiter := usecase.NewRateLimiter(&MockStorage{}, rateLimitIP, rateLimitToken, blockTime)
+		mockHandler := ratelimit.RateLimiterMiddleware(mockLimiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
 		}))
