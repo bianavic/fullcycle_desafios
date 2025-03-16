@@ -5,36 +5,37 @@ Desenvolver um rate limiter em Go que possa ser configurado para limitar o núme
 
 ```
 .
-├── README.md
-├── cmd
-│   └── api
-│       └── main.go
-├── docker-compose.yaml
-├── go.mod
-├── go.sum
-├── internal
-│   ├── config
-│   │   └── config.go
-│   ├── ratelimit
-│   │   ├── middleware.go
-│   │   └── middleware_test.go
-│   ├── repository
-│   │   └── storage
-│   │       ├── in_memory.go
-│   │       ├── mock
-│   │       │   ├── mock_redis_client.go
-│   │       │   └── mock_storage_strategy.go
-│   │       ├── redis.go
-│   │       ├── redis_client.go
-│   │       ├── redis_test.go
-│   │       └── storage_strategy.go
-│   └── usecase
-│       ├── rate_limiter.go
-│       └── test
-│           └── rate_limiter_test.go
-└── stress
-    ├── test_rate_limit.sh
-    └── test_rate_limit_over.sh
+├── Dockerfile                      # Arquivo de configuração do Docker para construir o contêiner da aplicação
+├── README.md                       # Documentação do projeto
+├── assets                          # Diretório para armazenar ativos estáticos
+│   └── images                      # Diretório para armazenar arquivos de imagem
+│       └── redis_commander1.png    # Imagem de exemplo para o Redis Commander
+├── cmd                             # Diretório para aplicativos de linha de comando
+│   └── api                         # Diretório para a aplicação principal da API
+│       ├── main.go                 # Ponto de entrada principal para a aplicação da API
+│       └── main_test.go            # Testes para a aplicação da API
+├── docker-compose.yaml             # Arquivo de configuração do Docker Compose para configurar o stack da aplicação
+├── go.mod                          # Arquivo de módulo do Go para gerenciamento de dependências
+├── go.sum                          # Arquivo de checksum do Go para dependências
+└── internal                        # Diretório para o código interno da aplicação
+    └── infra                       # Diretório para o código relacionado à infraestrutura
+        ├── config                  # Diretório para o código relacionado à configuração
+        │   └── config.go           # Carregamento e gerenciamento de configuração
+        ├── limiter                 # Diretório para a lógica de rate limit
+        │   ├── in_memory.go        # Estratégia de armazenamento em memória para rate limit
+        │   ├── in_memory_test.go   # Testes para a estratégia de armazenamento em memória
+        │   ├── limiter.go          # Lógica principal de rate limit
+        │   ├── limiter_test.go     # Testes para a lógica de rate limit
+        │   ├── mock                # Diretório para implementações mock
+        │   │   ├── mock_redis_client.go    # Implementação mock para o cliente Redis
+        │   │   └── mock_storage_strategy.go # Implementação mock para a estratégia de armazenamento
+        │   ├── redis.go            # Estratégia de armazenamento Redis para rate limit
+        │   ├── redis_client.go     # Interface do cliente Redis
+        │   ├── redis_test.go       # Testes para a estratégia de armazenamento Redis
+        │   └── storage_strategy.go # Interface para estratégias de armazenamento
+        └── middleware              # Diretório para componentes de middleware
+            ├── middleware.go       # Middleware para rate limit
+            └── middleware_test.go  # Testes para componentes de middleware
 ```
 
 
@@ -68,7 +69,7 @@ A vigésima primeira requisição deve retornar 429 Too Many Requests. Aguarde 6
 
 ## Redis commander
 1. Navegue até `http://127.0.0.1:8081/` 
-2. A cada requisição, dê um refresh na página para visualizar detalhes relacionados ao rate limit.
+2. A cada requisição, dê um refresh na página para visualizar TTL e outros detalhes configurados
 ![redis_commander1.png](assets/images/redis_commander1.png)
 
 ### Testes Automatizados:
