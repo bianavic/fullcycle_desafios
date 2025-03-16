@@ -69,7 +69,7 @@ A vigésima primeira requisição deve retornar 429 Too Many Requests. Aguarde 6
 
 ## Redis commander
 1. Navegue até `http://127.0.0.1:8081/` 
-2. A cada requisição, dê um refresh na página para visualizar TTL e outros detalhes configurados
+2. A cada requisição é possível visualizar as configuraçÕes do redis: IP, Token, e TTl de cada chamada.
 ![redis_commander1.png](assets/images/redis_commander1.png)
 
 ### Testes Automatizados:
