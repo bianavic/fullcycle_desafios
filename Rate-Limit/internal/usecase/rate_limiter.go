@@ -13,21 +13,28 @@ var (
 	ErrRateLimitExceeded = errors.New("rate limit exceeded")
 )
 
+// TokenConfig holds the rate limit and expiration time for a specific token.
+type TokenConfig struct {
+	RateLimit int
+	BlockTime time.Duration
+}
+
 // RateLimiter handles rate limiting logic.
 type RateLimiter struct {
 	storage        storage.StorageStrategy
 	rateLimitIP    int
 	rateLimitToken int
 	blockTime      time.Duration
+	tokenConfigs   map[string]TokenConfig
 }
 
 // NewRateLimiter creates a new RateLimiter instance.
-func NewRateLimiter(storage storage.StorageStrategy, rateLimitIP, rateLimitToken int, blockTime time.Duration) *RateLimiter {
+func NewRateLimiter(storage storage.StorageStrategy, rateLimitIP int, blockTime time.Duration, tokenConfigs map[string]TokenConfig) *RateLimiter {
 	return &RateLimiter{
-		storage:        storage,
-		rateLimitIP:    rateLimitIP,
-		rateLimitToken: rateLimitToken,
-		blockTime:      blockTime,
+		storage:      storage,
+		rateLimitIP:  rateLimitIP,
+		blockTime:    blockTime,
+		tokenConfigs: tokenConfigs,
 	}
 }
 
@@ -35,30 +42,42 @@ func NewRateLimiter(storage storage.StorageStrategy, rateLimitIP, rateLimitToken
 func (r *RateLimiter) Allow(ctx context.Context, ip, token string) error {
 	// check rate limit for token if provided
 	if token != "" {
-		if err := r.checkRateLimit(ctx, token, r.rateLimitToken); err != nil {
-			log.Printf("rate limit exceeded for token: %s", token)
-			return err
+		if config, exists := r.tokenConfigs[token]; exists {
+			// use token-specific configuration
+			if err := r.checkRateLimit(ctx, token, config.RateLimit, config.BlockTime); err != nil {
+				log.Printf("Rate limit exceeded for token: %s", token)
+				return err
+			}
+			log.Printf("Request allowed for token: %s", token)
+			return nil
+		} else {
+			// if the token is not configured, allow the request
+			log.Printf("Token %s not configured, allowing request", token)
+			return nil
 		}
-		log.Printf("request allowed for token: %s", token)
-		return nil
 	}
 
-	// Check rate limit for IP
-	return r.checkRateLimit(ctx, ip, r.rateLimitIP)
+	// check rate limit for IP
+	return r.checkRateLimit(ctx, ip, r.rateLimitIP, r.blockTime)
 }
 
 // checkRateLimit checks the rate limit for a given ip.
-func (r *RateLimiter) checkRateLimit(ctx context.Context, ip string, rateLimit int) error {
-	count, err := r.storage.Increment(ctx, ip, r.blockTime)
+func (r *RateLimiter) checkRateLimit(ctx context.Context, key string, rateLimit int, blockTime time.Duration) error {
+	count, err := r.storage.Increment(ctx, key, blockTime)
 	if err != nil {
-		log.Printf("Rate limit exceeded for IP: %s", ip)
+		log.Printf("failed to increment key %s: %v", key, err)
 		return err
 	}
 
 	if count > rateLimit {
+		// set the block time if the rate limit is exceeded
+		if err := r.storage.Set(ctx, key, count, blockTime); err != nil {
+			log.Printf("failed to set block time for key %s: %v", key, err)
+			return err
+		}
 		return ErrRateLimitExceeded
 	}
 
-	log.Printf("request allowed for IP: %s", ip)
+	log.Printf("request allowed for key: %s", key)
 	return nil
 }
