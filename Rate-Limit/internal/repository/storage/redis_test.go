@@ -137,11 +137,37 @@ func TestRedis_Set(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, ttl > 0)
 	})
-	//
-	//	t.Run("Set returns error for Redis failure", func(t *testing.T) {
-	//		client.Close()
-	//
-	//		err := storage.Set(ctx, key, value, expiration)
-	//		assert.Error(t, err)
-	//	})
+
+	t.Run("Set returns error for Redis failure", func(t *testing.T) {
+		client.Close()
+
+		err := storage.Set(ctx, key, value, expiration)
+		assert.Error(t, err)
+	})
+}
+
+func TestRedis_FlushAll(t *testing.T) {
+	client := setupRedisClient()
+	storage := &Redis{client: client}
+	ctx := context.Background()
+	key := "test_key"
+	value := 10
+
+	// set a key to ensure there is data to flush
+	err := storage.Set(ctx, key, value, 0)
+	assert.NoError(t, err)
+
+	// ensure the key is set
+	val, err := storage.Get(ctx, key)
+	assert.NoError(t, err)
+	assert.Equal(t, value, val)
+
+	// flush all keys
+	result := storage.FlushAll(ctx)
+	assert.NoError(t, result.Err())
+
+	// ensure the key is removed
+	val, err = storage.Get(ctx, key)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, val)
 }
