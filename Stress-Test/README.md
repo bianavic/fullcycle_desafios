@@ -1,36 +1,36 @@
 # Desafios FullCycle
 
-## Objetivo: 
-Criar um sistema CLI em Go para realizar testes de carga em um serviço web. O usuário deverá fornecer a URL do serviço, o número total de requests e a quantidade de chamadas simultâneas.
 
+## Stress Test
 
-O sistema deverá gerar um relatório com informações específicas após a execução dos testes.
+Acesse o diretorio do projeto - Stress-Test
 
-#### Entrada de Parâmetros via CLI:
-
+1. Construir imagem docker
 ```
---url: URL do serviço a ser testado.
-
---requests: Número total de requests.
-
---concurrency: Número de chamadas simultâneas.
+docker build -t stress-test .
 ```
 
-### Execução do Teste:
+2.Executar aplicação
+```
+docker run stress-test --url=http://google.com --requests=1000 --concurrency=10
+```
 
-- Realizar requests HTTP para a URL especificada.
-- Distribuir os requests de acordo com o nível de concorrência definido.
-- Garantir que o número total de requests seja cumprido.
+3.Executar testes
+```shell
+```
 
-### Geração de Relatório:
+4. Resultado
+```shell
+```
 
-- Apresentar um relatório ao final dos testes contendo:
-  - Tempo total gasto na execução
-  - Quantidade total de requests realizados.
-  - Quantidade de requests com status HTTP 200.
-  - Distribuição de outros códigos de status HTTP (como 404, 500, etc.).
-  
-- Execução da aplicação:
-  - Poderemos utilizar essa aplicação fazendo uma chamada via docker. Ex:
 
-  `docker run <sua imagem docker> —url=http://google.com —requests=1000 —concurrency=10`
+### Configuração Cobra CLI
+
+1. dependencias
+```shell
+go get -u github.com/spf13/cobra@latest
+```
+2. Inicialização
+```shell
+cobra-cli init <nome do projeto>
+```
