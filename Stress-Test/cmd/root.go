@@ -42,6 +42,9 @@ func worker(cfg Config, wg *sync.WaitGroup, codes chan<- int, requests int) {
 		}
 		codes <- resp.StatusCode
 		resp.Body.Close()
+
+		// sleep for 100ms to simulate a real user - delay to avoid overloading the server
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
