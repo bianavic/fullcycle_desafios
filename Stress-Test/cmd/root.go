@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -11,6 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/bianavic/fullcycle_desafios/internal"
 )
 
 type Report struct {
@@ -25,58 +24,65 @@ var (
 	concurrency int
 )
 
-func worker(url string, requests int, wg *sync.WaitGroup, codes chan<- int) {
+type Config struct {
+	URL         string
+	Requests    int
+	Concurrency int
+	Client      internal.HTTPClient
+}
+
+func worker(cfg Config, wg *sync.WaitGroup, codes chan<- int) {
 	defer wg.Done()
 
-	for i := 0; i < requests; i++ {
-		resp, err := http.Get(url)
+	for i := 0; i < cfg.Requests; i++ {
+		resp, err := cfg.Client.Get(cfg.URL)
 		if err != nil {
 			codes <- 0
 			continue
 		}
 
 		codes <- resp.StatusCode
-
 		resp.Body.Close()
 	}
 }
-
-type RunEFunc func(cmd *cobra.Command, args []string) error
 
 var rootCmd = &cobra.Command{
 	Use:   "fullcycle_desafios stress test",
 	Short: "A CLI tool to stress test a web service",
 	Long:  `A CLI tool to stress test a web service simulating concurrent HTTP requests`,
 	Run: func(cmd *cobra.Command, args []string) {
+		client := &internal.RealHTTPClient{Client: http.DefaultClient}
+		cfg := Config{
+			URL:         url,
+			Requests:    requests,
+			Concurrency: concurrency,
+			Client:      client,
+		}
+
 		fmt.Println("Making HTTP requests, please wait...")
 
-		codes := make(chan int, requests)
-
-		workerRequests := requests / concurrency
-		extraRequests := requests % concurrency
+		codes := make(chan int, cfg.Requests)
+		workerRequests := cfg.Requests / cfg.Concurrency
+		extraRequests := cfg.Requests % cfg.Concurrency
 
 		startTime := time.Now()
-
 		var wg sync.WaitGroup
 
-		for i := 0; i < concurrency; i++ {
+		for i := 0; i < cfg.Concurrency; i++ {
 			wg.Add(1)
-
 			r := workerRequests
 			if i < extraRequests {
 				r++
 			}
-
-			go worker(url, r, &wg, codes)
+			go worker(cfg, &wg, codes)
 		}
 
 		wg.Wait()
-
 		close(codes)
 
 		report := Report{
 			TotalTime:     time.Since(startTime),
-			TotalRequests: len(codes),
+			TotalRequests: cfg.Requests,
 			StatusCodes:   make(map[int]int),
 		}
 
