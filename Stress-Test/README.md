@@ -13,14 +13,9 @@ docker build -t stress-test .
 ```
 3. Execute o comando abaixo para executar o teste de stress com docker
 ```shell
-docker run stress-test --url=http://test.com --requests=1000 --concurrency=10
+docker run stress-test -u http://google.com -r 1000 -c 10
 ```
 
-3. Execute o comando abaixo para executar o teste unitario
-```shell
-./stress-test --url=http://test.com --requests=1000 --concurrency=10
-```
+Exemplo execução com relatório gerado
 
-4. Relatorio de teste
-```shell
-```
+![stress-test1.png](assets/images/stress-test1.png)

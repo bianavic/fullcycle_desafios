@@ -31,16 +31,15 @@ type Config struct {
 	Client      internal.HTTPClient
 }
 
-func worker(cfg Config, wg *sync.WaitGroup, codes chan<- int) {
+func worker(cfg Config, wg *sync.WaitGroup, codes chan<- int, requests int) {
 	defer wg.Done()
 
-	for i := 0; i < cfg.Requests; i++ {
+	for i := 0; i < requests; i++ {
 		resp, err := cfg.Client.Get(cfg.URL)
 		if err != nil {
-			codes <- 0
+			codes <- 0 // indicate a failed request
 			continue
 		}
-
 		codes <- resp.StatusCode
 		resp.Body.Close()
 	}
@@ -59,22 +58,31 @@ var rootCmd = &cobra.Command{
 			Client:      client,
 		}
 
+		// flag values
+		fmt.Printf("URL: %s\n", url)
+		fmt.Printf("Requests: %d\n", requests)
+		fmt.Printf("Concurrency: %d\n", concurrency)
+
 		fmt.Println("Making HTTP requests, please wait...")
 
+		// create a buffered channel for status codes
 		codes := make(chan int, cfg.Requests)
+
+		// calculate the number of requests per worker
 		workerRequests := cfg.Requests / cfg.Concurrency
 		extraRequests := cfg.Requests % cfg.Concurrency
 
 		startTime := time.Now()
 		var wg sync.WaitGroup
 
+		// launch workers
 		for i := 0; i < cfg.Concurrency; i++ {
 			wg.Add(1)
 			r := workerRequests
 			if i < extraRequests {
-				r++
+				r++ // distribute extra requests
 			}
-			go worker(cfg, &wg, codes)
+			go worker(cfg, &wg, codes, r)
 		}
 
 		wg.Wait()
