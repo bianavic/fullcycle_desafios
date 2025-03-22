@@ -25,4 +25,8 @@ docker run stress-test -u http://uol.com.br -r 100 -c 10
 
 Exemplo execução e relatório gerado
 
+- Status 200 OK
 ![stress-test1.png](assets/images/stress-test1.png)
+
+- Status != 200 OK
+![stress-test2.png](assets/images/stress-test2.png)
