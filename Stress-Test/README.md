@@ -1,36 +1,32 @@
 # Desafios FullCycle
 
-## Objetivo: 
-Criar um sistema CLI em Go para realizar testes de carga em um serviço web. O usuário deverá fornecer a URL do serviço, o número total de requests e a quantidade de chamadas simultâneas.
 
+## Stress Test
 
-O sistema deverá gerar um relatório com informações específicas após a execução dos testes.
-
-#### Entrada de Parâmetros via CLI:
-
+1. acesse o diretorio do projeto - Stress-Test
+```shell
+cd Stress-Test
 ```
---url: URL do serviço a ser testado.
+2. Execute o comando abaixo para construir a imagem docker
+```shell
+docker build -t stress-test .
+```
+3. Execute o comando abaixo para executar o teste de stress com docker
 
---requests: Número total de requests.
-
---concurrency: Número de chamadas simultâneas.
+- google.com é o endereço do site que será testado
+```shell
+docker run stress-test -u http://google.com -r 1000 -c 10
 ```
 
-### Execução do Teste:
+- uol.com.br é o endereço do site que será testado
+```shell
+docker run stress-test -u http://uol.com.br -r 100 -c 10
+```
 
-- Realizar requests HTTP para a URL especificada.
-- Distribuir os requests de acordo com o nível de concorrência definido.
-- Garantir que o número total de requests seja cumprido.
+Exemplo execução e relatório gerado
 
-### Geração de Relatório:
+- Status 200 OK
+![stress-test1.png](assets/images/stress-test1.png)
 
-- Apresentar um relatório ao final dos testes contendo:
-  - Tempo total gasto na execução
-  - Quantidade total de requests realizados.
-  - Quantidade de requests com status HTTP 200.
-  - Distribuição de outros códigos de status HTTP (como 404, 500, etc.).
-  
-- Execução da aplicação:
-  - Poderemos utilizar essa aplicação fazendo uma chamada via docker. Ex:
-
-  `docker run <sua imagem docker> —url=http://google.com —requests=1000 —concurrency=10`
+- Status != 200 OK
+![stress-test2.png](assets/images/stress-test2.png)
