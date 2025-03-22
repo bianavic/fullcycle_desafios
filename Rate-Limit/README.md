@@ -43,7 +43,7 @@ Desenvolver um rate limiter em Go que possa ser configurado para limitar o núme
 
 1. Clone o repositório.
 2. Navegue até o diretório `Rate-Limit`
-3. Execute ` docker-compose up --build` para iniciar os contêineres
+3. Execute `docker-compose up --build` para iniciar os contêineres
 
 ## Testando
 
@@ -69,7 +69,7 @@ A vigésima primeira requisição deve retornar 429 Too Many Requests. Aguarde 6
 
 ## Redis commander
 1. Navegue até `http://127.0.0.1:8081/` 
-2. A cada requisição, dê um refresh na página para visualizar TTL e outros detalhes configurados
+2. A cada requisição é possível visualizar as configuraçÕes do redis: IP, Token, e TTl de cada chamada.
 ![redis_commander1.png](assets/images/redis_commander1.png)
 
 ### Testes Automatizados:
