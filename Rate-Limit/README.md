@@ -43,7 +43,7 @@ Desenvolver um rate limiter em Go que possa ser configurado para limitar o núme
 
 1. Clone o repositório.
 2. Navegue até o diretório `Rate-Limit`
-3. Execute ` docker-compose up --build` para iniciar os contêineres
+3. Execute `docker-compose up --build` para iniciar os contêineres
 
 ## Testando
 
