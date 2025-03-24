@@ -14,7 +14,6 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 }
 
 func (r *OrderRepository) Save(order *entity.Order) error {
-	// prepare: conecta uma unica vez no banco e deixa a query pronta para ser executa varias vezes
 	smt, err := r.DB.Prepare("INSERT INTO orders (id, price, tax, final_price) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return err
@@ -33,4 +32,31 @@ func (r *OrderRepository) GetTotal() (int, error) {
 		return 0, err
 	}
 	return total, nil
+}
+
+func (r *OrderRepository) List() ([]entity.Order, error) {
+	var orders []entity.Order
+
+	rows, err := r.DB.Query("SELECT id, price, tax, final_price, created_at FROM orders ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		order := entity.Order{}
+		err := rows.Scan(
+			&order.ID,
+			&order.Price,
+			&order.Tax,
+			&order.FinalPrice,
+			&order.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }

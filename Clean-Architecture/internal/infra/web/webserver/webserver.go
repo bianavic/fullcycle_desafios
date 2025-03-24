@@ -26,11 +26,6 @@ func (s *WebServer) AddHandler(path string, handler http.HandlerFunc) {
 	s.Handlers[path] = handler
 }
 
-// LOGICA PARA TRABALHAR COM WEB SERVER
-// loop through the handlers and add them to the router - loop para
-// que as rotas sejam adicionadas ao router sendo executadas no listener and server
-// register middeleware logger
-// start the server
 func (s *WebServer) Start() {
 	s.Router.Use(middleware.Logger)
 	for path, handler := range s.Handlers {

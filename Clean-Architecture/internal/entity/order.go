@@ -1,6 +1,10 @@
 package entity
 
-import "errors"
+import (
+	"database/sql"
+	"errors"
+	"time"
+)
 
 // REGRA DE NEGOCIO
 type Order struct {
@@ -8,13 +12,15 @@ type Order struct {
 	Price      float64
 	Tax        float64
 	FinalPrice float64
+	CreatedAt  sql.NullTime
 }
 
-func NewOrder(id string, price float64, tax float64) (*Order, error) {
+func NewOrder(id string, price float64, tax float64, createdAt time.Time) (*Order, error) {
 	order := &Order{
-		ID:    id,
-		Price: price,
-		Tax:   tax,
+		ID:        id,
+		Price:     price,
+		Tax:       tax,
+		CreatedAt: sql.NullTime{Time: createdAt, Valid: true},
 	}
 	err := order.IsValid()
 	if err != nil {
@@ -43,4 +49,8 @@ func (o *Order) CalculateFinalPrice() error {
 		panic(err)
 	}
 	return nil
+}
+
+func (o *Order) SetCreatedAt() {
+	o.CreatedAt = sql.NullTime{Time: time.Now(), Valid: true}
 }

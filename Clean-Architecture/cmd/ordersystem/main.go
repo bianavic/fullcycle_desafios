@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 
@@ -47,11 +48,12 @@ func main() {
 	webserver := webserver.NewWebServer(configs.WebServerPort)
 	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
 	webserver.AddHandler("/order", webOrderHandler.Create)
+	webserver.AddHandler("/order", webOrderHandler.List)
 	fmt.Println("Starting web server on port", configs.WebServerPort)
 	go webserver.Start()
 
 	grpcServer := grpc.NewServer()
-	createOrderService := service.NewOrderService(*createOrderUseCase)
+	createOrderService := service.NewOrderService(*createOrderUseCase, *eventDispatcher)
 	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
 	reflection.Register(grpcServer)
 
@@ -64,12 +66,15 @@ func main() {
 
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		CreateOrderUseCase: *createOrderUseCase,
+		EventDispatcher:    *eventDispatcher,
 	}}))
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
 	fmt.Println("Starting GraphQL server on port", configs.GraphQLServerPort)
 	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+
+	consumeMessages()
 }
 
 func getRabbitMQChannel() *amqp.Channel {
@@ -82,4 +87,42 @@ func getRabbitMQChannel() *amqp.Channel {
 		panic(err)
 	}
 	return ch
+}
+
+func consumeMessages() {
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a channel: %v", err)
+	}
+	defer ch.Close()
+
+	msgs, err := ch.Consume(
+		"orders", // queue
+		"",       // consumer
+		true,     // auto-ack
+		false,    // exclusive
+		false,    // no-local
+		false,    // no-wait
+		nil,      // args
+	)
+	if err != nil {
+		log.Fatalf("Failed to register a consumer: %v", err)
+	}
+
+	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			fmt.Printf("Received a message: %s\n", d.Body)
+		}
+	}()
+
+	fmt.Println("Waiting for messages. To exit press CTRL+C")
+	<-forever
 }

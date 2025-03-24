@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
 	usecase "github.com/bianavic/fullcycle_clean-architecture/internal/usecase"
 	"github.com/bianavic/fullcycle_clean-architecture/pkg/events"
@@ -28,7 +29,7 @@ func NewWebOrderHandler(
 }
 
 func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var dto usecase.OrderInputDTO
+	var dto dto.OrderInputDTO
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -42,6 +43,40 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = json.NewEncoder(w).Encode(output)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
+	listOrder := usecase.NewListOrderUseCase(h.OrderRepository)
+	output, err := listOrder.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var orders []dto.OrderOutputDTO
+	for _, order := range output {
+		orders = append(orders, dto.OrderOutputDTO{
+			ID:         order.ID,
+			Price:      order.Price,
+			Tax:        order.Tax,
+			FinalPrice: order.FinalPrice,
+			CreatedAt:  order.CreatedAt,
+		})
+	}
+
+	if len(orders) == 0 {
+		orders = []dto.OrderOutputDTO{}
+	}
+
+	response := dto.OrdersOutputDTO{
+		Orders: orders,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
