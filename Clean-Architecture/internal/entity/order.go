@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 )
@@ -12,7 +11,7 @@ type Order struct {
 	Price      float64
 	Tax        float64
 	FinalPrice float64
-	CreatedAt  sql.NullTime
+	CreatedAt  time.Time
 }
 
 func NewOrder(id string, price float64, tax float64, createdAt time.Time) (*Order, error) {
@@ -20,7 +19,7 @@ func NewOrder(id string, price float64, tax float64, createdAt time.Time) (*Orde
 		ID:        id,
 		Price:     price,
 		Tax:       tax,
-		CreatedAt: sql.NullTime{Time: createdAt, Valid: true},
+		CreatedAt: createdAt,
 	}
 	err := order.IsValid()
 	if err != nil {
@@ -49,8 +48,4 @@ func (o *Order) CalculateFinalPrice() error {
 		panic(err)
 	}
 	return nil
-}
-
-func (o *Order) SetCreatedAt() {
-	o.CreatedAt = sql.NullTime{Time: time.Now(), Valid: true}
 }

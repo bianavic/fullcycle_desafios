@@ -66,12 +66,10 @@ func (suite *OrderRepositoryTestSuite) TestList() {
 	order1, err := entity.NewOrder("123", 10.0, 2.0, time.Now())
 	suite.NoError(err)
 	suite.NoError(order1.CalculateFinalPrice())
-	order1.SetCreatedAt()
 
 	order2, err := entity.NewOrder("456", 20.0, 3.0, time.Now())
 	suite.NoError(err)
 	suite.NoError(order2.CalculateFinalPrice())
-	order2.SetCreatedAt()
 
 	repo := NewOrderRepository(suite.Db)
 	err = repo.Save(order1)
