@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
@@ -42,9 +41,6 @@ func (c *ListOrderUseCase) Execute() ([]dto.OrderOutputDTO, error) {
 	return orders, nil
 }
 
-func convertToTimezone(t sql.NullTime, location *time.Location) string {
-	if t.Valid {
-		return t.Time.In(location).Format("2006-01-02 15:04:05 -07:00")
-	}
-	return ""
+func convertToTimezone(t time.Time, location *time.Location) string {
+	return t.In(location).Format("2006-01-02 15:04:05 -07:00")
 }

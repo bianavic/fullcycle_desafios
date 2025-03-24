@@ -56,7 +56,7 @@ func (r *OrderRepository) List() ([]entity.Order, error) {
 		if err != nil {
 			return nil, err
 		}
-		order.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+		order.CreatedAt, err = time.Parse("2006-01-02 15:04:05", createdAt)
 		if err != nil {
 			return nil, err
 		}

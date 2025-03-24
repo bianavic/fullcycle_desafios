@@ -4,6 +4,7 @@ import (
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
 	"github.com/bianavic/fullcycle_clean-architecture/pkg/events"
+	"time"
 )
 
 type CreateOrderUseCase struct {
@@ -26,11 +27,11 @@ func NewCreateOrderUseCase(
 
 func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDTO, error) {
 	order := entity.Order{
-		ID:    input.ID,
-		Price: input.Price,
-		Tax:   input.Tax,
+		ID:        input.ID,
+		Price:     input.Price,
+		Tax:       input.Tax,
+		CreatedAt: time.Now(),
 	}
-	order.SetCreatedAt()
 	order.CalculateFinalPrice()
 	if err := c.OrderRepository.Save(&order); err != nil {
 		return dto.OrderOutputDTO{}, err
@@ -41,7 +42,7 @@ func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDT
 		Price:      order.Price,
 		Tax:        order.Tax,
 		FinalPrice: order.FinalPrice,
-		CreatedAt:  order.CreatedAt.Time.Format("2006-01-02 15:04:05 -07:00"),
+		CreatedAt:  order.CreatedAt.Format("2006-01-02 15:04:05 -07:00"),
 	}
 
 	c.OrderCreated.SetPayload(dto)
