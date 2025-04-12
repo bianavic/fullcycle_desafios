@@ -10,6 +10,11 @@ import (
 
 func main() {
 	log.Print("starting server...")
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Welcome to the Weather API!"))
+	})
+
 	http.HandleFunc("/weather", handler)
 
 	port := os.Getenv("PORT")
