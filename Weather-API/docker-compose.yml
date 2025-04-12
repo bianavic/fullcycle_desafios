@@ -8,4 +8,4 @@ services:
     env_file:
       - .env
     environment:
-      WEATHER_API_KEY: ${WEATHER_API_KEY}
+      - ENV=development
