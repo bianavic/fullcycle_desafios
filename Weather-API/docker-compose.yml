@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      - "8080:8080"
     env_file:
       - .env
+    environment:
+      WEATHER_API_KEY: ${WEATHER_API_KEY}
