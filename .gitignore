@@ -29,3 +29,5 @@ go.work.sum
 
 Db Folder
 db/
+
+.env

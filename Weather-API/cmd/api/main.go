@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/bianavic/fullcycle_desafios/internal/service"
 )
 
 func main() {
@@ -36,5 +39,24 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello, World! What will the weather be like today?"))
+	cep := r.URL.Query().Get("cep")
+	if cep == "" {
+		http.Error(w, "Missing 'cep' parameter", http.StatusBadRequest)
+		return
+	}
+
+	result, err := service.GetWeatherByCEP(cep)
+	if err != nil {
+		if err.Error() == "invalid zip code" {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		} else if err.Error() == "zip code not found" {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
