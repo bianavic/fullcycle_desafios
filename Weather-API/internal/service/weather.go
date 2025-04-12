@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bianavic/fullcycle_desafios/internal/domain"
-	"github.com/bianavic/fullcycle_desafios/pkg"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/bianavic/fullcycle_desafios/internal/domain"
+	"github.com/bianavic/fullcycle_desafios/pkg"
 )
 
 func GetWeatherByCEP(cep string) (map[string]float64, error) {

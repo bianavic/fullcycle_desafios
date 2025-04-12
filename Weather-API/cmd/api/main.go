@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	log.Print("starting server...")
+	log.Print("sta\t//err := godotenv.Load()\n\t//if err != nil {\n\t//\tlog.Fatal(\"Error loading .env file\")\n\t//}rting server...")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to the Weather API!"))
