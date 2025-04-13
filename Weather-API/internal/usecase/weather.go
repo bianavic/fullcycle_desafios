@@ -35,11 +35,7 @@ func (uc *WeatherUsecase) GetWeatherByCEP(cep string) (map[string]float64, error
 		return nil, fmt.Errorf("%w: %v", domain.ErrFailedLocationData, err)
 	}
 
-	if location.Localidade == "" {
-		return nil, domain.ErrCEPNotFound
-	}
-
-	city := url.QueryEscape(location.Localidade)
+	city := url.QueryEscape(location.City)
 	weatherData, err := uc.WeatherService.GetWeatherByCity(city)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrWeatherService, err)

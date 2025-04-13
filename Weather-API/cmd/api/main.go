@@ -4,33 +4,70 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bianavic/fullcycle_desafios/internal/domain"
-	"github.com/bianavic/fullcycle_desafios/internal/service"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
+
+	"github.com/bianavic/fullcycle_desafios/internal/domain"
+	"github.com/bianavic/fullcycle_desafios/internal/service"
+	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 )
 
 func main() {
-	if os.Getenv("ENV") != "production" {
-		if err := godotenv.Load(); err != nil {
-			log.Print("warning: .env file not found - using system environment variables")
-		}
+	if err := loadEnv(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
+	apiKey := getAPIKey()
+
+	//locationService := service.NewViaCEPService()
+	locationService := service.NewFallbackLocationService(
+		service.NewViaCEPService(),
+		service.NewBrasilAPIService(),
+	)
+	weatherService := service.NewWeatherAPIService(apiKey)
+	weatherUsecase := usecase.NewWeatherUsecase(locationService, weatherService, apiKey)
+
+	http.HandleFunc("/weather", makeWeatherHandler(weatherUsecase))
+
+	port := getServerPort()
+
+	fmt.Println("server running on port", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal("failed to start server:", err)
+	}
+}
+
+func loadEnv() error {
+	if os.Getenv("ENV") != "production" {
+		if err := godotenv.Load(); err != nil {
+			return fmt.Errorf("failed to load .env file: %w", err)
+		}
+	}
+	return nil
+}
+
+func getAPIKey() string {
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if apiKey == "" {
 		log.Fatal("WEATHER_API_KEY environment variable is required")
 	}
 	log.Printf("server starting with API key: %s", maskAPIKey(apiKey))
+	return apiKey
+}
 
-	locationService := service.NewViaCEPService()
-	weatherService := service.NewWeatherAPIService(apiKey)
-	weatherUsecase := usecase.NewWeatherUsecase(locationService, weatherService, apiKey)
+func getServerPort() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	return port
+}
 
-	http.HandleFunc("/weather", func(w http.ResponseWriter, r *http.Request) {
+func makeWeatherHandler(weatherUsecase *usecase.WeatherUsecase) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		cep := r.URL.Query().Get("cep")
 		if cep == "" {
 			http.Error(w, "missing 'cep' parameter", http.StatusBadRequest)
@@ -44,16 +81,9 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
-	})
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	fmt.Println("server running on port", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal("failed to start server:", err)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		}
 	}
 }
 

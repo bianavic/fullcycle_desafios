@@ -1,11 +1,12 @@
 package domain
 
-type ViaCEPResponse struct {
-	Cep        string `json:"cep"`
-	Logradouro string `json:"logradouro"`
-	Bairro     string `json:"bairro"`
-	Localidade string `json:"localidade"`
-	UF         string `json:"uf"`
+type LocationResponse struct {
+	City     string `json:"city"`
+	State    string `json:"state"`
+	CEP      string `json:"cep"`
+	District string `json:"district"`
+	Street   string `json:"street"`
+	Service  string `json:"service"`
 }
 
 type WeatherAPIResponse struct {

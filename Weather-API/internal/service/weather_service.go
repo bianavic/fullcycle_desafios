@@ -3,9 +3,10 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianavic/fullcycle_desafios/internal/domain"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/bianavic/fullcycle_desafios/internal/domain"
 )
 
 type WeatherAPIService struct {

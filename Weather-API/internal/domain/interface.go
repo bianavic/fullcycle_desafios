@@ -1,7 +1,7 @@
 package domain
 
 type LocationService interface {
-	GetLocationByCEP(cep string) (*ViaCEPResponse, error)
+	GetLocationByCEP(cep string) (*LocationResponse, error)
 }
 
 type WeatherService interface {
