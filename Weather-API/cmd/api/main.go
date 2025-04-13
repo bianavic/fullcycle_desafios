@@ -52,7 +52,7 @@ func loadEnv() error {
 func getAPIKey() string {
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if apiKey == "" {
-		log.Fatal("WEATHER_API_KEY environment variable is required")
+		log.Fatal(domain.ErrAPIKeyMissing)
 	}
 	log.Printf("server starting with API key: %s", maskAPIKey(apiKey))
 	return apiKey

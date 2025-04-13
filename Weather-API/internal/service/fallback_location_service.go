@@ -1,8 +1,7 @@
 package service
 
 import (
-	"context"
-	"time"
+	"log"
 
 	"github.com/bianavic/fullcycle_desafios/internal/domain"
 )
@@ -19,36 +18,19 @@ func NewFallbackLocationService(primary, secondary domain.LocationService) *Fall
 	}
 }
 
-func (s *FallbackLocationService) GetLocationByCEP(cep string) (*domain.LocationResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	resultChan := make(chan *domain.LocationResponse, 1)
-	errChan := make(chan error, 1)
-
-	go func() {
-		loc, err := s.primary.GetLocationByCEP(cep)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		resultChan <- loc
-	}()
-
-	select {
-	case result := <-resultChan:
-		return result, nil
-	case <-errChan:
-		loc, err := s.secondary.GetLocationByCEP(cep)
-		if err != nil {
-			return nil, err
-		}
-		return loc, nil
-	case <-ctx.Done():
-		loc, err := s.secondary.GetLocationByCEP(cep)
-		if err != nil {
-			return nil, domain.ErrFailedLocationData
-		}
-		return loc, nil
+func (s *FallbackLocationService) GetLocationByCEP(cep string) (*domain.ViaCEPResponse, error) {
+	location, err := s.primary.GetLocationByCEP(cep)
+	if err == nil && location.Localidade != "" {
+		return location, nil
 	}
+
+	log.Printf("Primary service failed: %v. Trying fallback...", err)
+
+	location, err = s.secondary.GetLocationByCEP(cep)
+	if err != nil {
+		log.Printf("Fallback service failed: %v", err)
+		return nil, err
+	}
+
+	return location, nil
 }

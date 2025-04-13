@@ -15,7 +15,7 @@ func NewViaCEPService() *ViaCEPService {
 	return &ViaCEPService{}
 }
 
-func (s *ViaCEPService) GetLocationByCEP(cep string) (*domain.LocationResponse, error) {
+func (s *ViaCEPService) GetLocationByCEP(cep string) (*domain.ViaCEPResponse, error) {
 	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
 	resp, err := http.Get(viaCEPURL)
 	if err != nil {
@@ -49,12 +49,11 @@ func (s *ViaCEPService) GetLocationByCEP(cep string) (*domain.LocationResponse, 
 		return nil, domain.ErrCEPNotFound
 	}
 
-	return &domain.LocationResponse{
-		City:     viaCEPData.Localidade,
-		State:    viaCEPData.UF,
-		CEP:      viaCEPData.CEP,
-		District: viaCEPData.Bairro,
-		Street:   viaCEPData.Logradouro,
-		Service:  "ViaCEP",
+	return &domain.ViaCEPResponse{
+		Cep:        viaCEPData.CEP,
+		Localidade: viaCEPData.Localidade,
+		UF:         viaCEPData.UF,
+		Bairro:     viaCEPData.Bairro,
+		Logradouro: viaCEPData.Logradouro,
 	}, nil
 }

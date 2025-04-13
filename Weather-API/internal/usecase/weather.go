@@ -25,17 +25,17 @@ func NewWeatherUsecase(locationService domain.LocationService, weatherService do
 }
 
 func (uc *WeatherUsecase) GetWeatherByCEP(cep string) (map[string]float64, error) {
-	cleanCEP := strings.TrimSpace(strings.ReplaceAll(cep, "-", ""))
-	if !regexp.MustCompile(`^\d{8}$`).MatchString(cleanCEP) {
+	formatCEP := strings.TrimSpace(strings.ReplaceAll(cep, "-", ""))
+	if !regexp.MustCompile(`^\d{8}$`).MatchString(formatCEP) {
 		return nil, domain.ErrInvalidCEP
 	}
 
-	location, err := uc.LocationService.GetLocationByCEP(cleanCEP)
+	location, err := uc.LocationService.GetLocationByCEP(formatCEP)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrFailedLocationData, err)
 	}
 
-	city := url.QueryEscape(location.City)
+	city := url.QueryEscape(location.Localidade)
 	weatherData, err := uc.WeatherService.GetWeatherByCity(city)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrWeatherService, err)
