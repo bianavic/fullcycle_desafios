@@ -14,6 +14,7 @@ type BrasilAPIService struct{}
 func NewBrasilAPIService() *BrasilAPIService {
 	return &BrasilAPIService{}
 }
+
 func (s *BrasilAPIService) GetLocationByCEP(cep string) (*domain.ViaCEPResponse, error) {
 	url := fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", cep)
 	resp, err := http.Get(url)

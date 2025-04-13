@@ -1,0 +1,8 @@
+with-expecter: true
+inpackage: false
+testonly: false
+case: underscore
+dir: internal/domain
+output: internal/mocks
+outpkg: mocks
+log-level: info
