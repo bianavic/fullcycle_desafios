@@ -48,7 +48,6 @@ func (s *WeatherAPIService) GetWeatherByCity(city string) (*domain.WeatherAPIRes
 	}
 
 	var weatherData domain.WeatherAPIResponse
-	//body, _ := ioutil.ReadAll(resp.Body)
 	if err := json.Unmarshal(body, &weatherData); err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
 	}

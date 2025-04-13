@@ -25,7 +25,6 @@ func main() {
 
 	apiKey := getAPIKey()
 
-	//locationService := service.NewViaCEPService()
 	locationService := service.NewFallbackLocationService(
 		service.NewViaCEPService(),
 		service.NewBrasilAPIService(),
@@ -37,18 +36,22 @@ func main() {
 
 	port := getServerPort()
 	fmt.Println("server running on port", port)
-	
+
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
 }
 
 func loadEnv() error {
-	if os.Getenv("ENV") != "production" {
-		if err := godotenv.Load(); err != nil {
-			return fmt.Errorf("failed to load .env file: %w", err)
-		}
+	env := os.Getenv("ENV")
+	if env == "production" {
+		return nil
 	}
+
+	if err := godotenv.Load(); err != nil {
+		return fmt.Errorf("could not load .env file (dev env): %v", err)
+	}
+
 	return nil
 }
 
