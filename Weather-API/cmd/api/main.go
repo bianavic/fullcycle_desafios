@@ -16,6 +16,9 @@ import (
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	if err := loadEnv(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -33,8 +36,8 @@ func main() {
 	http.HandleFunc("/weather", makeWeatherHandler(weatherUsecase))
 
 	port := getServerPort()
-
 	fmt.Println("server running on port", port)
+	
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
@@ -69,13 +72,16 @@ func getServerPort() string {
 func makeWeatherHandler(weatherUsecase *usecase.WeatherUsecase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cep := r.URL.Query().Get("cep")
+		log.Printf("Received request for CEP: %s", cep)
+
 		if cep == "" {
-			http.Error(w, "missing 'cep' parameter", http.StatusBadRequest)
+			http.Error(w, domain.ErrMissingCEP.Error(), http.StatusBadRequest)
 			return
 		}
 
 		result, err := weatherUsecase.GetWeatherByCEP(cep)
 		if err != nil {
+			log.Printf("Error processing CEP %s: %v", cep, err)
 			handleError(w, err)
 			return
 		}
