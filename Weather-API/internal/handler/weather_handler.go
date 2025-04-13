@@ -46,8 +46,6 @@ func handleError(w http.ResponseWriter, err error) {
 		http.Error(w, domain.ErrWeatherService.Error(), http.StatusServiceUnavailable)
 	case errors.Is(err, domain.ErrFailedLocationData):
 		http.Error(w, domain.ErrFailedLocationData.Error(), http.StatusInternalServerError)
-	case errors.Is(err, domain.ErrFailedWeatherData):
-		http.Error(w, domain.ErrFailedWeatherData.Error(), http.StatusInternalServerError)
 	default:
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}

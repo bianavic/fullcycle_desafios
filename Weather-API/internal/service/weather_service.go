@@ -13,11 +13,19 @@ import (
 )
 
 type WeatherAPIService struct {
-	APIKey string
+	APIKey  string
+	BaseURL string
+	Client  *http.Client
 }
 
 func NewWeatherAPIService(apiKey string) *WeatherAPIService {
-	return &WeatherAPIService{APIKey: apiKey}
+	return &WeatherAPIService{
+		APIKey:  apiKey,
+		BaseURL: "https://api.weatherapi.com", // URL padrão
+		Client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+	}
 }
 
 func (s *WeatherAPIService) GetWeatherByCity(city string) (*domain.WeatherAPIResponse, error) {
@@ -26,7 +34,7 @@ func (s *WeatherAPIService) GetWeatherByCity(city string) (*domain.WeatherAPIRes
 	}
 
 	encodedCity := url.QueryEscape(city)
-	weatherURL := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", s.APIKey, encodedCity)
+	weatherURL := fmt.Sprintf("%s/v1/current.json?key=%s&q=%s", s.BaseURL, s.APIKey, encodedCity)
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -34,7 +42,7 @@ func (s *WeatherAPIService) GetWeatherByCity(city string) (*domain.WeatherAPIRes
 
 	resp, err := client.Get(weatherURL)
 	if err != nil {
-		return nil, fmt.Errorf("%w: request failed: %v", domain.ErrFailedWeatherData, err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToSendRequest, err)
 	}
 	defer resp.Body.Close()
 
@@ -44,16 +52,12 @@ func (s *WeatherAPIService) GetWeatherByCity(city string) (*domain.WeatherAPIRes
 	}
 
 	if strings.Contains(string(body), "<html>") {
-		return nil, fmt.Errorf("weather API returned HTML error: %s", string(body))
+		return nil, fmt.Errorf("%w: weather API returned HTML instead of JSON", domain.ErrWeatherService)
 	}
 
 	var weatherData domain.WeatherAPIResponse
 	if err := json.Unmarshal(body, &weatherData); err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
-	}
-
-	if weatherData.Current.TempC == 0 {
-		return nil, fmt.Errorf("%w: temperature data is zero", domain.ErrFailedWeatherData)
 	}
 
 	return &weatherData, nil

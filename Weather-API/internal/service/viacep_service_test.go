@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -10,59 +9,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBrasilAPIService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
+func TestViaCEPService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
 
 	t.Run("should successfully get location by CEP", func(t *testing.T) {
-		cep := "12345678"
 		mockHTTPClient := &MockHTTPClient{
 			ResponseBody: `{
 				"cep":"12345678",
-				"city":"São Paulo",
-				"state":"SP",
-				"neighborhood":"Centro",
-				"street":"Rua Teste"
+				"localidade":"São Paulo",
+				"uf":"SP",
+				"bairro":"Centro",
+				"logradouro":"Rua Teste"
 			}`,
 			StatusCode: http.StatusOK,
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
-		response, err := service.GetLocationByCEP(cep)
+		service := &ViaCEPService{Client: mockHTTPClient}
+		resp, err := service.GetLocationByCEP("12345678")
 
 		assert.NoError(t, err)
-		assert.Equal(t, "São Paulo", response.Localidade)
-		assert.Equal(t, "SP", response.UF)
-		assert.Equal(t, "Centro", response.Bairro)
-		assert.Equal(t, "Rua Teste", response.Logradouro)
+		assert.Equal(t, "São Paulo", resp.Localidade)
+		assert.Equal(t, "SP", resp.UF)
+		assert.Equal(t, "Centro", resp.Bairro)
+		assert.Equal(t, "Rua Teste", resp.Logradouro)
 	})
 
 	t.Run("should return error when zip code is not found", func(t *testing.T) {
-		cep := "87654321"
+		cep := "00000000"
 		mockHTTPClient := &MockHTTPClient{
 			ResponseBody: `{"error":"not found"}`,
 			StatusCode:   http.StatusNotFound,
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
+		service := NewViaCEPService(mockHTTPClient)
 		_, err := service.GetLocationByCEP(cep)
 
 		assert.Error(t, domain.ErrCEPNotFound, err)
 	})
 
 	t.Run("should return error when fail to read JSON", func(t *testing.T) {
-		cep := "12345678"
-
-		brokenReader := ioutil.NopCloser(brokenReader{})
-
 		mockHTTPClient := &MockHTTPClient{
-			ResponseBodyReader: brokenReader,
+			ResponseBodyReader: brokenReader{},
 			StatusCode:         http.StatusOK,
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
-		_, err := service.GetLocationByCEP(cep)
+		service := &ViaCEPService{Client: mockHTTPClient}
+		_, err := service.GetLocationByCEP("12345678")
 
-		assert.Error(t, err)
 		assert.ErrorIs(t, err, domain.ErrFailedToParseData)
+
 	})
 
 	t.Run("should return error when fail to unmarshalling JSON", func(t *testing.T) {
@@ -75,7 +69,7 @@ func TestBrasilAPIService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
 			StatusCode:   http.StatusOK,
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
+		service := &ViaCEPService{Client: mockHTTPClient}
 		_, err := service.GetLocationByCEP(cep)
 
 		assert.Error(t, err)
@@ -90,7 +84,7 @@ func TestBrasilAPIService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
 			StatusCode:   http.StatusOK,
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
+		service := &ViaCEPService{Client: mockHTTPClient}
 		_, err := service.GetLocationByCEP(invalidCEP)
 
 		assert.Error(t, err)
@@ -104,7 +98,7 @@ func TestBrasilAPIService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
 			Err: errors.New("simulated network error"),
 		}
 
-		service := NewBrasilAPIService(mockHTTPClient)
+		service := &ViaCEPService{Client: mockHTTPClient}
 		_, err := service.GetLocationByCEP(cep)
 
 		assert.Error(t, err)

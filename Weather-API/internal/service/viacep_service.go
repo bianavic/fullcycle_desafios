@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/bianavic/fullcycle_desafios/internal/domain"
@@ -19,26 +19,25 @@ func NewViaCEPService(client domain.HTTPClient) *ViaCEPService {
 
 func (s *ViaCEPService) GetLocationByCEP(cep string) (*domain.ViaCEPResponse, error) {
 	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
+
 	req, err := http.NewRequest(http.MethodGet, viaCEPURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", domain.ErrFailedLocationData, err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToCreateRequest, err)
 	}
 
 	resp, err := s.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", domain.ErrFailedLocationData, err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToSendRequest, err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
-
-	var raw map[string]interface{}
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
+	if resp.StatusCode != http.StatusOK {
+		return nil, domain.ErrCEPNotFound
 	}
 
-	if erro, ok := raw["erro"].(bool); ok && erro {
-		return nil, domain.ErrCEPNotFound
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
 	}
 
 	var viaCEPData struct {
@@ -51,10 +50,6 @@ func (s *ViaCEPService) GetLocationByCEP(cep string) (*domain.ViaCEPResponse, er
 
 	if err := json.Unmarshal(body, &viaCEPData); err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
-	}
-
-	if viaCEPData.Localidade == "" {
-		return nil, domain.ErrCEPNotFound
 	}
 
 	return &domain.ViaCEPResponse{
