@@ -24,12 +24,15 @@ func main() {
 
 	apiKey := getAPIKey()
 
-	locationService := service.NewFallbackLocationService(
-		service.NewViaCEPService(),
-		service.NewBrasilAPIService(),
+	client := &http.Client{}
+	viaCEP := service.NewViaCEPService(client)
+	brasilAPI := service.NewBrasilAPIService(client)
+
+	fallback := service.NewFallbackLocationService(
+		viaCEP, brasilAPI,
 	)
 	weatherService := service.NewWeatherAPIService(apiKey)
-	weatherUsecase := usecase.NewWeatherUsecase(locationService, weatherService, apiKey)
+	weatherUsecase := usecase.NewWeatherUsecase(fallback, weatherService, apiKey)
 
 	http.HandleFunc("/weather", handler.MakeWeatherHandler(weatherUsecase))
 
