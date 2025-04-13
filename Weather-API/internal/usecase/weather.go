@@ -2,11 +2,9 @@ package usecase
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,52 +18,46 @@ import (
 func GetWeatherByCEP(cep string) (map[string]float64, error) {
 	cleanCEP := strings.TrimSpace(strings.ReplaceAll(cep, "-", ""))
 	if !regexp.MustCompile(`^\d{8}$`).MatchString(cleanCEP) {
-		return nil, errors.New("invalid CEP format")
+		return nil, domain.ErrInvalidCEP
 	}
 
 	// ViaCEP
 	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cleanCEP)
 	resp, err := http.Get(viaCEPURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch location data: %w", err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedLocationData, err)
 	}
 	defer resp.Body.Close()
 
 	var cepData domain.ViaCEPResponse
 	body, _ := ioutil.ReadAll(resp.Body)
 	if err := json.Unmarshal(body, &cepData); err != nil {
-		return nil, fmt.Errorf("failed to parse location data: %w", err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
 	}
 
 	if cepData.Localidade == "" {
-		return nil, errors.New("location not found")
+		return nil, domain.ErrCEPNotFound
 	}
 
 	// WEATHER API
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if apiKey == "" {
-		return nil, errors.New("missing WEATHER_API_KEY environment variable")
+		return nil, domain.ErrAPIKeyMissing
 	}
 
 	city := url.QueryEscape(cepData.Localidade)
 	weatherURL := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, city)
-	log.Printf("Calling WeatherAPI with URL: %s", weatherURL)
-
-	log.Printf("Localidade: %s", cepData.Localidade)
-	log.Printf("Escapada: %s", city)
-	log.Printf("Chamada da API: %s", weatherURL)
 
 	respWeather, err := http.Get(weatherURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch weather data: %w", err)
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedWeatherData, err)
 	}
 	defer respWeather.Body.Close()
 
 	var weatherData domain.WeatherAPIResponse
 	bodyWeather, _ := io.ReadAll(respWeather.Body)
-	log.Printf("raw WeatherAPI response: %s", string(bodyWeather))
 	if err := json.Unmarshal(bodyWeather, &weatherData); err != nil {
-		return nil, fmt.Errorf("failed to parse weather data: %w error (%d): %s", err, respWeather.StatusCode, string(bodyWeather))
+		return nil, fmt.Errorf("%w: %v", domain.ErrFailedToParseData, err)
 	}
 
 	// conversion
