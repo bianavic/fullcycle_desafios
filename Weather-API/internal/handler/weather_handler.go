@@ -1,21 +1,21 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
 	"errors"
-	"github.com/bianavic/fullcycle_desafios/internal/domain"
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"log"
 	"net/http"
+
+	"github.com/bianavic/fullcycle_desafios/internal/domain"
 )
 
-func MakeWeatherHandler(weatherUsecase *usecase.WeatherUsecase) http.HandlerFunc {
+func MakeWeatherHandler(weatherUsecase domain.WeatherUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cep := r.URL.Query().Get("cep")
 		log.Printf("Received request for CEP: %s", cep)
 
 		if cep == "" {
-			http.Error(w, domain.ErrMissingCEP.Error(), http.StatusBadRequest)
+			http.Error(w, domain.ErrCEPNotFound.Error(), http.StatusBadRequest)
 			return
 		}
 

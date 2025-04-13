@@ -9,3 +9,8 @@ type LocationService interface {
 type WeatherService interface {
 	GetWeatherByCity(city string) (*WeatherAPIResponse, error)
 }
+
+//go:generate mockery --name=WeatherUseCase --dir=. --output=../mocks --outpkg=mocks --filename=mock_weather_usecase.go
+type WeatherUseCase interface {
+	GetWeatherByCEP(cep string) (map[string]float64, error)
+}

@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/bianavic/fullcycle_desafios/internal/domain"
-	"github.com/bianavic/fullcycle_desafios/internal/handlers"
+	"github.com/bianavic/fullcycle_desafios/internal/handler"
 	"github.com/bianavic/fullcycle_desafios/internal/service"
 	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 )
@@ -31,7 +31,7 @@ func main() {
 	weatherService := service.NewWeatherAPIService(apiKey)
 	weatherUsecase := usecase.NewWeatherUsecase(locationService, weatherService, apiKey)
 
-	http.HandleFunc("/weather", handlers.MakeWeatherHandler(weatherUsecase))
+	http.HandleFunc("/weather", handler.MakeWeatherHandler(weatherUsecase))
 
 	port := getServerPort()
 	fmt.Println("server running on port", port)
