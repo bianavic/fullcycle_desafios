@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bianavic/fullcycle_desafios/internal/domain"
+	"github.com/bianavic/fullcycle_desafios/internal/service"
+	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
-	"time"
-
-	"github.com/bianavic/fullcycle_desafios/internal/usecase"
 )
 
 func main() {
@@ -27,55 +26,58 @@ func main() {
 	}
 	log.Printf("server starting with API key: %s", maskAPIKey(apiKey))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome to the Weather API!"))
-	})
+	locationService := service.NewViaCEPService()
+	weatherService := service.NewWeatherAPIService(apiKey)
+	weatherUsecase := usecase.NewWeatherUsecase(locationService, weatherService, apiKey)
 
-	http.HandleFunc("/weather", handler)
+	http.HandleFunc("/weather", func(w http.ResponseWriter, r *http.Request) {
+		cep := r.URL.Query().Get("cep")
+		if cep == "" {
+			http.Error(w, "missing 'cep' parameter", http.StatusBadRequest)
+			return
+		}
+
+		result, err := weatherUsecase.GetWeatherByCEP(cep)
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("defaulting to port %s", port)
 	}
-
-	server := &http.Server{
-		Addr:         ":" + port,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	fmt.Println("server running on port 8080")
-	if err := server.ListenAndServe(); err != nil {
-		fmt.Println("error starting server:", err)
+	fmt.Println("server running on port", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal("failed to start server:", err)
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	cep := r.URL.Query().Get("cep")
-	if cep == "" {
-		http.Error(w, "missing 'cep' parameter", http.StatusBadRequest)
-		return
+func handleError(w http.ResponseWriter, err error) {
+	var statusCode int
+	var errMsg string
+
+	switch {
+	case errors.Is(err, domain.ErrInvalidCEP):
+		http.Error(w, domain.ErrInvalidCEP.Error(), http.StatusUnprocessableEntity)
+	case errors.Is(err, domain.ErrCEPNotFound):
+		http.Error(w, domain.ErrCEPNotFound.Error(), http.StatusNotFound)
+	case errors.Is(err, domain.ErrWeatherService):
+		http.Error(w, domain.ErrWeatherService.Error(), http.StatusServiceUnavailable)
+	case errors.Is(err, domain.ErrFailedLocationData):
+		http.Error(w, domain.ErrFailedLocationData.Error(), http.StatusInternalServerError)
+	case errors.Is(err, domain.ErrFailedWeatherData):
+		http.Error(w, domain.ErrFailedWeatherData.Error(), http.StatusInternalServerError)
+	default:
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
 
-	result, err := usecase.GetWeatherByCEP(cep)
-	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidCEP):
-			http.Error(w, domain.ErrInvalidCEP.Error(), http.StatusUnprocessableEntity)
-		case errors.Is(err, domain.ErrCEPNotFound):
-			http.Error(w, domain.ErrCEPNotFound.Error(), http.StatusNotFound)
-		case errors.Is(err, domain.ErrWeatherService):
-			http.Error(w, domain.ErrWeatherService.Error(), http.StatusServiceUnavailable)
-		default:
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
+	log.Printf("Error occurred: %v", err)
+	http.Error(w, errMsg, statusCode)
 }
 
 func maskAPIKey(key string) string {
