@@ -63,6 +63,7 @@ func GetWeatherByCEP(cep string) (map[string]float64, error) {
 
 	var weatherData domain.WeatherAPIResponse
 	bodyWeather, _ := io.ReadAll(respWeather.Body)
+	log.Printf("raw WeatherAPI response: %s", string(bodyWeather))
 	if err := json.Unmarshal(bodyWeather, &weatherData); err != nil {
 		return nil, fmt.Errorf("failed to parse weather data: %w error (%d): %s", err, respWeather.StatusCode, string(bodyWeather))
 	}
