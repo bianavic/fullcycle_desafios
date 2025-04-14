@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
@@ -18,12 +20,16 @@ func NewListOrderUseCase(OrderRepository entity.OrderRepositoryInterface) *ListO
 }
 
 func (c *ListOrderUseCase) Execute() ([]dto.OrderOutputDTO, error) {
-	var orders = []dto.OrderOutputDTO{}
+	if c.OrderRepository == nil {
+		return nil, fmt.Errorf("orderRepository is nil")
+	}
 
+	var orders = []dto.OrderOutputDTO{}
 	ordersEntity, err := c.OrderRepository.List()
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("orders from repository: %+v", ordersEntity)
 
 	location, _ := time.LoadLocation("Local")
 

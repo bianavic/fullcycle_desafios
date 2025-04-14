@@ -30,13 +30,23 @@ func main() {
 		panic(err)
 	}
 
-	db, err := sql.Open(configs.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", configs.DBUser, configs.DBPassword, configs.DBHost, configs.DBPort, configs.DBName))
+	fmt.Print("Connecting to database...\n")
+	db, err := sql.Open(configs.DBDriver,
+		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			configs.DBUser, configs.DBPassword,
+			configs.DBHost, configs.DBPort, configs.DBName))
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
+	if err := db.Ping(); err != nil {
+		panic("Database connection failed: " + err.Error())
+	}
+
+	// Initialize RabbitMQ
 	rabbitMQChannel := getRabbitMQChannel()
+	defer rabbitMQChannel.Close()
 
 	eventDispatcher := events.NewEventDispatcher()
 	eventDispatcher.Register("OrderCreated", &order_created_handler.OrderCreatedHandler{
@@ -45,11 +55,16 @@ func main() {
 
 	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
 
+	// Initialize Web Server
 	webserver := webserver.NewWebServer(configs.WebServerPort)
 	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
-	webserver.AddHandler("/order", webOrderHandler.Create)
+
+	// Register handler
+	webserver.AddHandler("/order/create", webOrderHandler.Create)
 	webserver.AddHandler("/order", webOrderHandler.List)
 	fmt.Println("Starting web server on port", configs.WebServerPort)
+
+	// Start servers
 	go webserver.Start()
 
 	grpcServer := grpc.NewServer()
@@ -101,6 +116,18 @@ func consumeMessages() {
 		log.Fatalf("Failed to open a channel: %v", err)
 	}
 	defer ch.Close()
+
+	_, err = ch.QueueDeclare(
+		"orders", // name
+		true,     // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare queue: %v", err)
+	}
 
 	msgs, err := ch.Consume(
 		"orders", // queue

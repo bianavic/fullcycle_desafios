@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
-	"time"
 )
 
 type OrderRepository struct {
@@ -36,7 +35,7 @@ func (r *OrderRepository) GetTotal() (int, error) {
 }
 
 func (r *OrderRepository) List() ([]entity.Order, error) {
-	rows, err := r.DB.Query("SELECT id, price, tax, final_price, created_at FROM orders ORDER BY created_at DESC")
+	rows, err := r.DB.Query("SELECT id, price, tax, final_price, created_at FROM orders")
 	if err != nil {
 		return nil, err
 	}
@@ -45,19 +44,7 @@ func (r *OrderRepository) List() ([]entity.Order, error) {
 	var orders []entity.Order
 	for rows.Next() {
 		var order entity.Order
-		var createdAt string
-		err := rows.Scan(
-			&order.ID,
-			&order.Price,
-			&order.Tax,
-			&order.FinalPrice,
-			&createdAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		order.CreatedAt, err = time.Parse("2006-01-02 15:04:05", createdAt)
-		if err != nil {
+		if err := rows.Scan(&order.ID, &order.Price, &order.Tax, &order.FinalPrice, &order.CreatedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)

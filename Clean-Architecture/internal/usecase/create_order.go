@@ -33,6 +33,7 @@ func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDT
 		CreatedAt: time.Now(),
 	}
 	order.CalculateFinalPrice()
+
 	if err := c.OrderRepository.Save(&order); err != nil {
 		return dto.OrderOutputDTO{}, err
 	}
