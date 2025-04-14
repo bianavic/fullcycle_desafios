@@ -81,7 +81,7 @@ Project Structure
 
 1. subir docker
 ```shell
-docker-compose up
+docker-compose up -d
 ```
 
 2. Rodar migração
@@ -99,27 +99,43 @@ cd cmd/ordersystem
 go run main.go wire_gen.go
 ```
 
-5. Configurar o rabbitMQ
+***
+[NOTA] Configure rabbitMQ antes de executar as requests
+***
 
-5a. Acessa o rabbitMQ
+5. Preparar rabbitMQ
+
+5a. Acesso
 ```
 http://localhost:15672/
 ```
 senha: guest
 
-5b. Acessa Queues
+5b. Seleciona a aba Queues and Streams
 ```
 http://localhost:15672/#/queues
 ```
 
 5c. Criar fila
 - no campo `name`, digitar orders e clicar em Add queue
-- entrar na fila `orders` e criar o bind
-- no campo `From exchang, digitar amq.direct e clicar em Bind
+
+
+- <img alt="imagem com o campo orders configurado no rabbit pq" src="assets/images/rabbitMQ1.png" width="434" height="356" title="Fila"/>
+
+5b. Realizar bidding
+- clicar na queue criada `orders` para realizar o bind à fila
+
+- no campo `From exchange`, digitar `amq.direct` e clicar em Bind
+
+
+- <img alt="imagem do bidding na aba exchanges" src="assets/images/rabbitMQ2.png" width="434" height="356" title="Fila"/>
+
 
 ### Request via webserver
+
+- Create order
 ```shell
-curl -X POST http://localhost:8000/order \
+curl -X POST http://localhost:8000/order/create \
      -H "Content-Type: application/json" \
      -d '{
            "id": "aaaaaa",
@@ -130,7 +146,14 @@ curl -X POST http://localhost:8000/order \
 
 `Order created: {aaaaaa 99.5 0.5 100}`
 
-#### No rabbitMQ: 
+- List all orders
+```shell
+curl -X GET http://localhost:8000/order
+```
+
+`{"orders":[{"id":"bbbbbb","price":100,"tax":1,"final_price":101,"created_at":"2025-03-23 23:54:44 -03:00"}]}`
+
+#### [rabbitMQ] Visualizar a mensagem gerada: 
 - acessa: http://localhost:15672/#/queues/%2F/orders
 - clicar em `Get messages` e verificar a mensagem
 
@@ -179,7 +202,7 @@ evans -r repl
 2. No prompt do evans, executar
 ```shell
 package pb
-service OrderService
+usecase OrderService
 call CreateOrder
 ```
 responder no prompt grpc
@@ -203,12 +226,12 @@ tax (TYPE_FLOAT) => 2
 ---
 ## Banco MySQL - visualizar dados
 1. acessar banco mysql
-```shell
+```
 docker exec -it mysql bash
 ```
 
 2. acessar banco orders
-```shell
+```
 mysql -u root -p orders
 ```
 senha: root
