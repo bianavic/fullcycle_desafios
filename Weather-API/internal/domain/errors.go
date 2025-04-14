@@ -4,7 +4,7 @@ import "errors"
 
 var (
 	ErrInvalidCEP            = errors.New("invalid zipcode")
-	ErrCEPNotFound           = errors.New("zipcode not found")
+	ErrCEPNotFound           = errors.New("can not find zipcode")
 	ErrWeatherService        = errors.New("weather service unavailable")
 	ErrAPIKeyMissing         = errors.New("missing WEATHER_API_KEY environment variable")
 	ErrFailedLocationData    = errors.New("failed to fetch location data")

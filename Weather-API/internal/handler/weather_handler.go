@@ -15,7 +15,7 @@ func MakeWeatherHandler(weatherUsecase domain.WeatherUseCase) http.HandlerFunc {
 		log.Printf("Received request for CEP: %s", cep)
 
 		if cep == "" {
-			http.Error(w, domain.ErrCEPNotFound.Error(), http.StatusBadRequest)
+			http.Error(w, domain.ErrCEPNotFound.Error(), http.StatusNotFound)
 			return
 		}
 

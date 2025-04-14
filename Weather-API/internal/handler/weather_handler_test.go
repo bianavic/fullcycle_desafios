@@ -54,7 +54,7 @@ func TestMakeWeatherHandler(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Equal(t, http.StatusNotFound, rr.Code)
 		assert.Contains(t, rr.Body.String(), domain.ErrCEPNotFound.Error())
 	})
 

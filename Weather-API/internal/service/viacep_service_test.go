@@ -36,7 +36,7 @@ func TestViaCEPService_GetLocationByCEPGetLocationByCEP(t *testing.T) {
 	t.Run("should return error when zip code is not found", func(t *testing.T) {
 		cep := "00000000"
 		mockHTTPClient := &MockHTTPClient{
-			ResponseBody: `{"error":"not found"}`,
+			ResponseBody: `{"error":"can not find zipcode"}`,
 			StatusCode:   http.StatusNotFound,
 		}
 
