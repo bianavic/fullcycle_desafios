@@ -1,0 +1,31 @@
+##############################################
+# ☁️ CLOUD RUN TESTS
+##############################################
+
+### ✅ [CloudRun] Sucesso: CEP válido com dados encontrados
+GET https://weather-api-181365624128.us-central1.run.app/weather?cep=01001-000
+Accept: application/json
+
+### ❌ [CloudRun] Erro: CEP com formato inválido
+GET https://weather-api-181365624128.us-central1.run.app/weather?cep=abc-defg
+Accept: application/json
+
+### ❌ [CloudRun] Erro: CEP não informado
+GET https://weather-api-181365624128.us-central1.run.app/weather
+Accept: application/json
+
+##############################################
+# 🐳 DOCKER LOCAL TESTS
+##############################################
+
+### ✅ [Docker] Sucesso: CEP válido com dados encontrados
+GET http://localhost:8080/weather?cep=01001-000
+Accept: application/json
+
+### ❌ [Docker] Erro: CEP com formato inválido
+GET http://localhost:8080/weather?cep=abc-defg
+Accept: application/json
+
+### ❌ [Docker] Erro: CEP não informado
+GET http://localhost:8080/weather?cep
+Accept: application/json
