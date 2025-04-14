@@ -51,7 +51,7 @@ func loadEnv() error {
 	}
 
 	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("could not load .env file (dev env): %v", err)
+		log.Println("⚠️ .env não encontrado, seguindo com variáveis de ambiente do sistema")
 	}
 
 	return nil
