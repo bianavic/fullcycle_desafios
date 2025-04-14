@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
+	"time"
 )
 
 type OrderRepository struct {
@@ -44,9 +46,24 @@ func (r *OrderRepository) List() ([]entity.Order, error) {
 	var orders []entity.Order
 	for rows.Next() {
 		var order entity.Order
-		if err := rows.Scan(&order.ID, &order.Price, &order.Tax, &order.FinalPrice, &order.CreatedAt); err != nil {
+		var createdAtRaw interface{}
+		err := rows.Scan(&order.ID, &order.Price, &order.Tax, &order.FinalPrice, &createdAtRaw)
+		if err != nil {
 			return nil, err
 		}
+
+		switch v := createdAtRaw.(type) {
+		case time.Time:
+			order.CreatedAt = v
+		case []byte:
+			order.CreatedAt, err = time.Parse("2006-01-02 15:04:05", string(v))
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse created_at: %w", err)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported type for created_at: %T", v)
+		}
+
 		orders = append(orders, order)
 	}
 	return orders, nil
