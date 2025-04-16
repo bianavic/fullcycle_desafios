@@ -4,6 +4,7 @@ import (
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
 	"github.com/bianavic/fullcycle_clean-architecture/pkg/events"
+	"log"
 	"time"
 )
 
@@ -35,6 +36,7 @@ func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDT
 	order.CalculateFinalPrice()
 
 	if err := c.OrderRepository.Save(&order); err != nil {
+		log.Printf("error saving order: %v", err)
 		return dto.OrderOutputDTO{}, err
 	}
 
