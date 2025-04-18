@@ -2,7 +2,6 @@ package entity
 
 import (
 	"errors"
-	"time"
 )
 
 // REGRA DE NEGOCIO
@@ -11,15 +10,13 @@ type Order struct {
 	Price      float64
 	Tax        float64
 	FinalPrice float64
-	CreatedAt  time.Time
 }
 
-func NewOrder(id string, price float64, tax float64, createdAt time.Time) (*Order, error) {
+func NewOrder(id string, price float64, tax float64) (*Order, error) {
 	order := &Order{
-		ID:        id,
-		Price:     price,
-		Tax:       tax,
-		CreatedAt: createdAt,
+		ID:    id,
+		Price: price,
+		Tax:   tax,
 	}
 	err := order.IsValid()
 	if err != nil {

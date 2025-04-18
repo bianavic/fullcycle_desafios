@@ -63,8 +63,8 @@ func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OrderRepository is nil", http.StatusInternalServerError)
 		return
 	}
-	
-	listOrder := usecase.NewListOrderUseCase(h.OrderRepository)
+
+	listOrder := usecase.NewListOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
 	output, err := listOrder.Execute()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,7 +78,6 @@ func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
 			Price:      order.Price,
 			Tax:        order.Tax,
 			FinalPrice: order.FinalPrice,
-			CreatedAt:  order.CreatedAt,
 		})
 	}
 

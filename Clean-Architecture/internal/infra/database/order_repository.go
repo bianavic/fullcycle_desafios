@@ -2,9 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
-	"time"
 )
 
 type OrderRepository struct {
@@ -36,8 +34,8 @@ func (r *OrderRepository) GetTotal() (int, error) {
 	return total, nil
 }
 
-func (r *OrderRepository) List() ([]entity.Order, error) {
-	rows, err := r.DB.Query("SELECT id, price, tax, final_price, created_at FROM orders")
+func (r *OrderRepository) ListOrders() ([]entity.Order, error) {
+	rows, err := r.DB.Query("SELECT id, price, tax, final_price FROM orders")
 	if err != nil {
 		return nil, err
 	}
@@ -46,22 +44,9 @@ func (r *OrderRepository) List() ([]entity.Order, error) {
 	var orders []entity.Order
 	for rows.Next() {
 		var order entity.Order
-		var createdAtRaw interface{}
-		err := rows.Scan(&order.ID, &order.Price, &order.Tax, &order.FinalPrice, &createdAtRaw)
-		if err != nil {
-			return nil, err
-		}
-
-		switch v := createdAtRaw.(type) {
-		case time.Time:
-			order.CreatedAt = v
-		case []byte:
-			order.CreatedAt, err = time.Parse("2006-01-02 15:04:05", string(v))
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse created_at: %w", err)
-			}
-		default:
-			return nil, fmt.Errorf("unsupported type for created_at: %T", v)
+		scanErr := rows.Scan(&order.ID, &order.Price, &order.Tax, &order.FinalPrice)
+		if scanErr != nil {
+			return nil, scanErr
 		}
 
 		orders = append(orders, order)
