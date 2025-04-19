@@ -105,7 +105,7 @@ func getRabbitMQChannel() *amqp.Channel {
 	}
 	ch, err := conn.Channel()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to open a channel: %v", err)
 	}
 	return ch
 }

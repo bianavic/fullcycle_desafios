@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"fmt"
 )
 
 // REGRA DE NEGOCIO
@@ -30,7 +31,7 @@ func (o *Order) IsValid() error {
 		return errors.New("invalid ID")
 	}
 	if o.Price <= 0 {
-		return errors.New("invalid price")
+		return fmt.Errorf("invalid price: %f", o.Price)
 	}
 	if o.Tax <= 0 {
 		return errors.New("invalid tax")

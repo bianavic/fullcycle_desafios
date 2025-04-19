@@ -1,7 +1,5 @@
 package event
 
-import "time"
-
 // PODE ESTAR NA PASTA INFREA OU NA PASTA ENTITY
 
 // EventInterface é a interface que define um evento
@@ -27,8 +25,4 @@ func (e *OrderCreated) GetPayload() interface{} {
 
 func (e *OrderCreated) SetPayload(payload interface{}) {
 	e.Payload = payload
-}
-
-func (e *OrderCreated) GetDateTime() time.Time {
-	return time.Now()
 }
