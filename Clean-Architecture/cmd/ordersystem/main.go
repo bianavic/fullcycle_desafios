@@ -84,6 +84,7 @@ func main() {
 
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		CreateOrderUseCase: *createOrderUseCase,
+		ListOrderUseCase:   *listOrderUseCase,
 		EventDispatcher:    *eventDispatcher,
 	}}))
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))

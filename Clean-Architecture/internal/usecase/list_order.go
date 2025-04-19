@@ -39,13 +39,12 @@ func (c *ListOrderUseCase) Execute() ([]dto.OrderOutputDTO, error) {
 
 	var orders = []dto.OrderOutputDTO{}
 	for _, order := range ordersEntity {
-		dto := dto.OrderOutputDTO{
+		orders = append(orders, dto.OrderOutputDTO{
 			ID:         order.ID,
 			Price:      order.Price,
 			Tax:        order.Tax,
-			FinalPrice: order.Price + order.Tax,
-		}
-		orders = append(orders, dto)
+			FinalPrice: order.FinalPrice,
+		})
 	}
 
 	return orders, nil
