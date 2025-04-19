@@ -91,7 +91,7 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
-	fmt.Printf("🚀 GraphQL playground rodando em http://localhost:%s/\n", configs.GraphQLServerPort)
+	fmt.Printf("GraphQL playground rodando em http://localhost:%s/\n", configs.GraphQLServerPort)
 	err = http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
 	if err != nil {
 		log.Fatalf("Failed to start GraphQL server: %v", err)

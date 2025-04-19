@@ -1,152 +1,64 @@
 # Desafio FullCycle
 
-obs: erro para grapql createorder
+## Objetivo
+Criar um endpoint de listagem das orders para cada tipo de serviço:
 
-## Listagem das ordens - criar um enpoint para cada tipo de serviço
-- via webserver - criar endpoint rest
-- via graphql - criar query graphql
-- via grpc - criar endpoint grpc
+- **Webserver**: Endpoint REST
+- **GraphQL**: Query GraphQL
+- **gRPC**: Endpoint gRPC
 
-Project Structure
-```
-.
-├── LICENSE
-├── README.md
-├── api
-│   ├── create_order.http
-│   └── list_orders.http
-├── assets
-│   └── images
-│       ├── rabbitMQ1.png
-│       ├── rabbitMQ2.png
-│       ├── rabbitMQ3.png
-│       ├── test1.png
-│       ├── test2.png
-│       ├── test3.png
-│       ├── test4.png
-│       └── test5.png
-├── cmd
-│   └── ordersystem
-│       ├── main.go
-│       ├── wire.go
-│       └── wire_gen.go
-├── configs
-│   └── config.go
-├── docker-compose.yaml
-├── go.mod
-├── go.sum
-├── internal
-│   ├── dto
-│   │   └── order_dto.go
-│   ├── entity
-│   │   ├── interfaces.go
-│   │   ├── order.go
-│   │   └── order_test.go
-│   ├── events
-│   │   ├── handlers
-│   │   │   └── order_created_handler.go
-│   │   ├── order_created.go
-│   │   └── order_listed.go
-│   ├── infrastructure
-│   │   ├── database
-│   │   │   ├── order_repository.go
-│   │   │   ├── order_repository_test.go
-│   │   │   └── migrations
-│   │   │       ├── 000001_init.down.sql
-│   │   │       └── 000001_init.up.sql
-│   │   ├── graphql
-│   │   │   ├── generated.go
-│   │   │   ├── model
-│   │   │   │   └── models_gen.go
-│   │   │   ├── resolver.go
-│   │   │   ├── schema.graphqls
-│   │   │   └── schema.resolvers.go
-│   │   ├── grpc
-│   │   │   ├── pb
-│   │   │   │   ├── order.pb.go
-│   │   │   │   └── order_grpc.pb.go
-│   │   │   ├── proto
-│   │   │   │   └── order.proto
-│   │   │   └── service
-│   │   │       └── order_service.go
-│   │   └── http
-│   │       ├── handlers
-│   │       │   └── order_handler.go
-│   │       └── server.go
-│   └── application
-│       ├── commands
-│       │   └── create_order.go
-│       └── queries
-│           └── list_orders.go
-├── pkg
-│   └── events
-│       ├── dispatcher.go
-│       ├── dispatcher_test.go
-│       └── interfaces.go
-└── tools.go
+---
+
+## Serviços e Portas
+
+| Serviço     | Tipo      | Porta/URL                   |
+|-------------|-----------|-----------------------------|
+| Web Server  | REST      | `:8000`                     |
+| gRPC        | Protobuf  | `:50051`                    |
+| GraphQL     | Playground| [http://localhost:8081/](http://localhost:8081/) |
+
+---
+
+## Configuração e Execução
+
+### Pré-requisitos
+- Docker e Docker Compose instalados
+- Go 1.23.8+ instalado
+- Migrate CLI para execução de migrações
+
+### Passo a Passo
+
+1. **acessar raiz do projeto**
+```shell
+cd Clean-Architecture
 ```
 
-## Executar
-
-1. subir docker
+2. subir containers docker
 ```shell
 docker-compose up -d
 ```
 
-2. Rodar migração
-```
-migrate -path ./internal/infra/database/sql/migrations -database "mysql://root:root@tcp(localhost:3306)/orders" up
+2. rodar as migrações do banco de dados
+```shell
+migrate -path ./internal/infra/database/sql/migrations \
+    -database "mysql://root:root@tcp(localhost:3306)/orders" \
+    up
 ```
 
-3. acessa diretorio
+3. acessar o diretorio do serviço
 ```shell
 cd cmd/ordersystem
 ```
 
-4. executa servidores (webserver, graphql, grpc)
+4. iniciar servidores (Web, GraphQL, gRPC)
 ```shell
 go run main.go wire_gen.go
 ```
 
-***
-[NOTA] Configure rabbitMQ antes de executar as requests
-***
+---
+### Request via webserver (REST)
 
-5. Preparar rabbitMQ
-
-5a. Acesso
-```
-http://localhost:15672/
-```
-senha: guest
-
-5b. Seleciona a aba Queues and Streams
-```
-http://localhost:15672/#/queues
-```
-
-5c. Criar fila
-- no campo `name`, digitar orders e clicar em Add queue
-
-<img alt="imagem com o campo orders configurado no rabbit pq" src="assets/images/rabbitMQ1.png" width="434" height="356" title="Fila"/>
-
-5b. Realizar bidding
-- clicar na queue criada `orders` para realizar o bind à fila
-- no campo `From exchange`, digitar `amq.direct` e clicar em Bind
-
-<img alt="imagem do bidding na aba exchanges" src="assets/images/rabbitMQ2.png" width="434" height="356" title="Fila"/>
-
-6b. Verificar a mensagem
-***Realizar chamada apenas após criar Order***
-- Aba `Queues and Streams`
-- clicar em `Get messages` e verificar a mensagem
-
-<img alt="imagem do rabbitMQ com a mensagem" src="assets/images/rabbitMQ3.png" width="434" height="356" title="Fila"/>
-
-
-### Request via webserver
-
-- Create order
+- criar order
 ```shell
 curl -X POST http://localhost:8000/order/create \
      -H "Content-Type: application/json" \
@@ -157,47 +69,49 @@ curl -X POST http://localhost:8000/order/create \
          }'
 ```
 
+Resposta esperada:
+
 `Order created: {aaaaaa 99.5 0.5 100}`
 
-- List all orders
+- listar orders
 ```shell
 curl -X GET http://localhost:8000/order
 ```
 
+Resposta esperada:
+
 `{"orders":[{"id":"eeeeee","price":20,"tax":0.2,"final_price":20.2}]}`
 
-### Request via grpc
+---
+### Request via gRPC
 
-1. No terminal, executar
+Recomendado usar o Evans como cliente CLI gRPC https://evans.syfm.me/
+
+1. iniciar o cliente Evans
 ```bash
 evans -r repl
 ```
 
-2. No prompt do evans, executar
+2. no prompt do evans, executar um a um
 ```shell
 package pb
+service OrderService
 ```
 
-3. Acessar service, executar
-````shell
-service OrderService
-````
-
-3. Criar Order, executar
-````shell
+Criar Order
+```
 call CreateOrder
-````
+```
 
-4. Responder no prompt grpc
+Input
 ```shell
 id (TYPE_STRING) => dddddd
 price (TYPE_FLOAT) => 50
 tax (TYPE_FLOAT) => 0.5
-
 ```
 
-Response esperada
-```shell
+Resposta esperada:
+```
 {
   "finalPrice": 50.5,
   "id": "dddddd",
@@ -206,13 +120,13 @@ Response esperada
 }
 ```
 
-5. Listar orders, executar
+4. listar orders
 ```shell
 call ListOrders
 ```
 
-Response esperada
-```shell
+Resposta esperada:
+```
 {
   "orders": [
     {
@@ -231,91 +145,17 @@ Response esperada
 }
 ```
 
-### Request via graphql
-
-1. acessa porta 8080
-```
-http://localhost:8081/
-```
-
-2. cria Order e executa
-```shell
-mutation {
-  createOrder(input: {
-    id: "bbbbbb"
-    Price: 99.9
-    Tax: 0.6
-  }) {
-    id
-    Price
-    Tax
-    FinalPrice
-  }
-}
-```
-
-output
-```shell
-{
-  "data": {
-    "createOrder": {
-      "id": "bbbbbb",
-      "Price": 99.9,
-      "Tax": 0.6,
-      "FinalPrice": 100.5
-    }
-  }
-}
-```
-
-3. Lista orders e executa
-```shell
-query {
-  listOrders {
-    id
-    Price
-    Tax
-    FinalPrice
-  }
-}
-```
-
-output
-```shell
-{
-  "data": {
-    "listOrders": [
-      {
-        "id": "bbbbbb",
-        "Price": 99.9,
-        "Tax": 0.6,
-        "FinalPrice": 100.5
-      },
-      {
-        "id": "eeeeee",
-        "Price": 20,
-        "Tax": 0.2,
-        "FinalPrice": 20.2
-      }
-    ]
-  }
-}
-```
-
 ---
+### Request via GraphQL
 
-#### [rabbitMQ] Visualizar a mensagem gerada: 
-- acessa: http://localhost:15672/#/queues/%2F/orders
-- clicar em `Get messages` e verificar a mensagem
-
-### Request via graphql
-
-1. acessa porta 8081
+1. acessar o playground
 ```
 http://localhost:8081/
 ```
 
-2. cria mutation e executa
+2. executar as chamadas
+
+2a. criar order
 ```shell
 mutation createOrder {
   createOrder(input: {id: "bbbbbb", price: 100, tax: 1.0 }) {
@@ -327,7 +167,7 @@ mutation createOrder {
 }
 ```
 
-output
+Resposta esperada:
 ```shell
 {
   "data": {
@@ -341,7 +181,8 @@ output
 }
 ```
 
-3. Lista orders e executa
+2b. listar orders
+
 ```shell
 query {
   listOrders {
@@ -353,7 +194,7 @@ query {
 }
 ```
 
-output
+Resposta esperada:
 ```shell
 {
   "data": {
@@ -382,21 +223,7 @@ output
 ```
 
 ---
-
-## Banco MySQL - visualizar dados
-1. acessar banco mysql
-```
-docker exec -it mysql bash
-```
-
-2. acessar banco orders
-```
-mysql -u root -p orders
-```
-senha: root
-
-3. Ver tabela
-```
-select * from orders;
-```
----
+### Notas Adicionais
+- Certifique-se que todos os serviços estão rodando antes de fazer as requisições
+- As migrações precisam ser executadas apenas na primeira execução
+- Para reiniciar completamente, pare os containers com `docker-compose down -v` e recomece o processo
