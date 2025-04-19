@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
@@ -29,6 +30,14 @@ func NewWebOrderHandler(
 }
 
 func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
+	// validation for nil dependencies
+	if h == nil || h.OrderRepository == nil || h.EventDispatcher == nil || h.OrderCreatedEvent == nil {
+		http.Error(w, "Handler not properly initialized", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Received order creation request")
+
 	var dto dto.OrderInputDTO
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
@@ -50,7 +59,12 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
-	listOrder := usecase.NewListOrderUseCase(h.OrderRepository)
+	if h.OrderRepository == nil {
+		http.Error(w, "OrderRepository is nil", http.StatusInternalServerError)
+		return
+	}
+
+	listOrder := usecase.NewListOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
 	output, err := listOrder.Execute()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,7 +78,6 @@ func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
 			Price:      order.Price,
 			Tax:        order.Tax,
 			FinalPrice: order.FinalPrice,
-			CreatedAt:  order.CreatedAt,
 		})
 	}
 

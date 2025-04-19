@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -21,15 +22,19 @@ func NewWebServer(serverPort string) *WebServer {
 	}
 }
 
-// cadastra as rotas
+// AddHandler cadastra as rotas
 func (s *WebServer) AddHandler(path string, handler http.HandlerFunc) {
 	s.Handlers[path] = handler
 }
 
-func (s *WebServer) Start() {
+func (s *WebServer) Start() error {
 	s.Router.Use(middleware.Logger)
+	s.Router.Use(middleware.Recoverer)
+
 	for path, handler := range s.Handlers {
 		s.Router.Handle(path, handler)
 	}
-	http.ListenAndServe(s.WebServerPort, s.Router)
+
+	log.Printf("Server listening on :%s", s.WebServerPort)
+	return http.ListenAndServe(s.WebServerPort, s.Router)
 }

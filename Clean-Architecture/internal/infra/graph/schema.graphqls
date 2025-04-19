@@ -1,20 +1,24 @@
-type Query {
-    _empty: String
-}
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
 
 type Order {
-    id: String!
-    Price: Float!
-    Tax: Float!
-    FinalPrice: Float!
+  id: String!
+  Price: Float!
+  Tax: Float!
+  FinalPrice: Float!
 }
 
 input OrderInput {
-    id: String!
-    Price: Float!
-    Tax: Float!
+  id : String!
+  Price: Float!
+  Tax: Float!
+}
+
+type Query {
+  listOrders: [Order]
 }
 
 type Mutation {
-    createOrder(input: OrderInput): Order
+  createOrder(input: OrderInput): Order
 }

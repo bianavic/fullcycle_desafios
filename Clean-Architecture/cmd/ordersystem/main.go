@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	graphql_handler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -30,30 +31,48 @@ func main() {
 		panic(err)
 	}
 
-	db, err := sql.Open(configs.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", configs.DBUser, configs.DBPassword, configs.DBHost, configs.DBPort, configs.DBName))
+	fmt.Print("Connecting to database...\n")
+	db, err := sql.Open(configs.DBDriver,
+		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			configs.DBUser, configs.DBPassword,
+			configs.DBHost, configs.DBPort, configs.DBName))
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
+	if err := db.Ping(); err != nil {
+		panic("Database connection failed: " + err.Error())
+	}
+
+	// Initialize RabbitMQ
 	rabbitMQChannel := getRabbitMQChannel()
+	defer rabbitMQChannel.Close()
 
 	eventDispatcher := events.NewEventDispatcher()
 	eventDispatcher.Register("OrderCreated", &order_created_handler.OrderCreatedHandler{
 		RabbitMQChannel: rabbitMQChannel,
 	})
 
+	// Initialize use cases
 	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
+	listOrderUseCase := NewListOrderUseCase(db, eventDispatcher)
 
+	// Initialize Web Server
 	webserver := webserver.NewWebServer(configs.WebServerPort)
 	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
-	webserver.AddHandler("/order", webOrderHandler.Create)
+
+	// Register handler
+	webserver.AddHandler("/order/create", webOrderHandler.Create)
 	webserver.AddHandler("/order", webOrderHandler.List)
 	fmt.Println("Starting web server on port", configs.WebServerPort)
+
+	// Start servers
 	go webserver.Start()
 
+	// Initialize gRPC server
 	grpcServer := grpc.NewServer()
-	createOrderService := service.NewOrderService(*createOrderUseCase, *eventDispatcher)
+	createOrderService := service.NewOrderService(*createOrderUseCase, *listOrderUseCase, *eventDispatcher)
 	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
 	reflection.Register(grpcServer)
 
@@ -66,26 +85,51 @@ func main() {
 
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		CreateOrderUseCase: *createOrderUseCase,
+		ListOrderUseCase:   *listOrderUseCase,
 		EventDispatcher:    *eventDispatcher,
 	}}))
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
-	fmt.Println("Starting GraphQL server on port", configs.GraphQLServerPort)
-	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+	fmt.Printf("🚀 GraphQL playground rodando em http://localhost:%s/\n", configs.GraphQLServerPort)
+	err = http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+	if err != nil {
+		log.Fatalf("Failed to start GraphQL server: %v", err)
+	}
 
-	consumeMessages()
+	go consumeMessages()
 }
 
 func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		panic(err)
+	var conn *amqp.Connection
+	var ch *amqp.Channel
+	var err error
+
+	maxAttempts := 5
+	for i := 0; i < maxAttempts; i++ {
+		conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(i) * time.Second)
 	}
-	ch, err := conn.Channel()
+
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to connect to RabbitMQ after %d attempts: %v", maxAttempts, err))
 	}
+
+	for i := 0; i < maxAttempts; i++ {
+		ch, err = conn.Channel()
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(i) * time.Second)
+	}
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to open a channel after %d attempts: %v", maxAttempts, err))
+	}
+
 	return ch
 }
 
@@ -101,6 +145,18 @@ func consumeMessages() {
 		log.Fatalf("Failed to open a channel: %v", err)
 	}
 	defer ch.Close()
+
+	_, err = ch.QueueDeclare(
+		"orders", // name
+		true,     // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare queue: %v", err)
+	}
 
 	msgs, err := ch.Consume(
 		"orders", // queue

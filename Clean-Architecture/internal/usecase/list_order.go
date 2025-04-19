@@ -1,46 +1,51 @@
 package usecase
 
 import (
-	"time"
-
+	"fmt"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/entity"
+	"github.com/bianavic/fullcycle_clean-architecture/pkg/events"
+	"log"
 )
 
 type ListOrderUseCase struct {
 	OrderRepository entity.OrderRepositoryInterface
+	OrderCreated    events.EventInterface
+	EventDispatcher events.EventDispatcherInterface
 }
 
-func NewListOrderUseCase(OrderRepository entity.OrderRepositoryInterface) *ListOrderUseCase {
+func NewListOrderUseCase(
+	OrderRepository entity.OrderRepositoryInterface,
+	OrderCreated events.EventInterface,
+	EventDispatcher events.EventDispatcherInterface,
+) *ListOrderUseCase {
 	return &ListOrderUseCase{
 		OrderRepository: OrderRepository,
+		OrderCreated:    OrderCreated,
+		EventDispatcher: EventDispatcher,
 	}
 }
 
 func (c *ListOrderUseCase) Execute() ([]dto.OrderOutputDTO, error) {
-	var orders = []dto.OrderOutputDTO{}
+	if c.OrderRepository == nil {
+		return nil, fmt.Errorf("orderRepository is nil")
+	}
 
-	ordersEntity, err := c.OrderRepository.List()
+	ordersEntity, err := c.OrderRepository.ListOrders()
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("orders from repository: %+v", ordersEntity)
 
-	location, _ := time.LoadLocation("Local")
-
+	var orders = []dto.OrderOutputDTO{}
 	for _, order := range ordersEntity {
-		dto := dto.OrderOutputDTO{
+		orders = append(orders, dto.OrderOutputDTO{
 			ID:         order.ID,
 			Price:      order.Price,
 			Tax:        order.Tax,
-			FinalPrice: order.Price + order.Tax,
-			CreatedAt:  convertToTimezone(order.CreatedAt, location),
-		}
-		orders = append(orders, dto)
+			FinalPrice: order.FinalPrice,
+		})
 	}
 
 	return orders, nil
-}
-
-func convertToTimezone(t time.Time, location *time.Location) string {
-	return t.In(location).Format("2006-01-02 15:04:05 -07:00")
 }
