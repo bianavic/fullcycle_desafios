@@ -1,8 +1,21 @@
 # Desafios FullCycle
 
 ---
+## 1- CLEAN ARCH
+Criar o usecase de listagem das orders.
+Esta listagem precisa ser feita com:
+- Endpoint REST (GET /order)
+- Service ListOrders com GRPC
+- Query ListOrders GraphQL
+  Não esqueça de criar as migrações necessárias e o arquivo api.http com a request para criar e listar as orders.
 
-## 1- CLIENT SERVER API
+Para a criação do banco de dados, utilize o Docker (Dockerfile / docker-compose.yaml), com isso ao rodar o comando docker compose up tudo deverá subir, preparando o banco de dados.
+
+Inclua um README.md com os passos a serem executados no desafio e a porta em que a aplicação deverá responder em cada serviço.
+
+---
+
+## 2- CLIENT SERVER API
 Entregar dois sistemas em Go:
 - client.go
 - server.go
@@ -35,7 +48,7 @@ OBS: os 3 contextos deverão retornar erro nos logs caso o tempo de execução s
 
 ---
 
-## 2- MULTITHREADING
+## 3- MULTITHREADING
 Neste desafio você terá que usar o que aprendemos com Multithreading e APIs para buscar o resultado mais rápido entre duas APIs distintas.
 
 As duas requisições serão feitas simultaneamente para as seguintes APIs:
@@ -53,7 +66,7 @@ http://viacep.com.br/ws/" + cep + "/json/
 - Limitar o tempo de resposta em 1 segundo. Caso contrário, o erro de timeout deve ser exibido.
 
 ---
-## 3- RATE LIMIT
+## 4- RATE LIMIT
 ### Objetivo
 Desenvolver um rate limiter em Go que possa ser configurado para limitar o número máximo de requisições por segundo com base em um endereço IP específico ou em um token de acesso.
 
@@ -99,7 +112,7 @@ Teste seu rate limiter sob diferentes condições de carga para garantir que ele
 - O servidor web deve responder na porta 8080.
 
 ---
-## 4- STESS TEST
+## 5- STESS TEST
 ## Objetivo:
 Criar um sistema CLI em Go para realizar testes de carga em um serviço web. O usuário deverá fornecer a URL do serviço, o número total de requests e a quantidade de chamadas simultâneas.
 
@@ -135,7 +148,7 @@ O sistema deverá gerar um relatório com informações específicas após a exe
 `docker run <sua imagem docker> —url=http://google.com —requests=1000 —concurrency=10`
 
   ---
-## 5- LABS
+## 6- LABS
 ### WEATHER API
 ### Desafio prático
 
