@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/dto"
 	"github.com/bianavic/fullcycle_clean-architecture/internal/infra/graph/model"
 	"log"
@@ -13,16 +14,22 @@ import (
 
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input *model.OrderInput) (*model.Order, error) {
+	if input == nil {
+		return nil, fmt.Errorf("input cannot be nil")
+	}
+
 	dto := dto.OrderInputDTO{
 		ID:    input.ID,
 		Price: float64(input.Price),
 		Tax:   float64(input.Tax),
 	}
+
 	output, err := r.CreateOrderUseCase.Execute(dto)
 	if err != nil {
-		log.Printf("error in CreateOrder: %v", err)
-		return nil, err
+		log.Printf("CreateOrder error: %v", err)
+		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
+
 	return &model.Order{
 		ID:         output.ID,
 		Price:      float64(output.Price),
@@ -40,7 +47,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) ListOrders(ctx context.Context) ([]*model.Order, error) {
+func (r *queryResolver) ListOrders(_ context.Context) ([]*model.Order, error) {
 	orders, err := r.ListOrderUseCase.Execute()
 	if err != nil {
 		return nil, err

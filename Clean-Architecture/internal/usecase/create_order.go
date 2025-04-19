@@ -26,13 +26,18 @@ func NewCreateOrderUseCase(
 }
 
 func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDTO, error) {
+	log.Printf("CreateOrder input - ID: %s, Price: %f, Tax: %f", input.ID, input.Price, input.Tax)
+
 	order := entity.Order{
 		ID:    input.ID,
 		Price: input.Price,
 		Tax:   input.Tax,
 	}
-	order.CalculateFinalPrice()
 
+	err := order.CalculateFinalPrice()
+	if err != nil {
+		return dto.OrderOutputDTO{}, err
+	}
 	if err := c.OrderRepository.Save(&order); err != nil {
 		log.Printf("error saving order: %v", err)
 		return dto.OrderOutputDTO{}, err

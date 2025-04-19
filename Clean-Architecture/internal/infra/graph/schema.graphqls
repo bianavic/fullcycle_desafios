@@ -4,19 +4,19 @@
 
 type Order {
   id: String!
-  price: Float!
-  tax: Float!
-  finalPrice: Float!
+  Price: Float!
+  Tax: Float!
+  FinalPrice: Float!
 }
 
 input OrderInput {
-  id: String!
-  price: Float!
-  tax: Float!
+  id : String!
+  Price: Float!
+  Tax: Float!
 }
 
 type Query {
-  listOrders: [Order!]!
+  listOrders: [Order]
 }
 
 type Mutation {
